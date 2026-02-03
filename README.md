@@ -1,4 +1,4 @@
-# Quran App (Damar Creative)
+# Quran App
 
 A minimalist, aesthetic, and "cozy" Quran application built with Flutter. Designed for a focused and serene reading experience with a monochrome dark theme.
 
