@@ -72,6 +72,7 @@ class _SurahListScreenState extends State<SurahListScreen> {
               ),
               const SizedBox(height: 24),
               _buildInfoItem('Developer', 'Damar Jati'),
+              _buildInfoItem('App Version', '1.0.0'),
               _buildInfoItem('Email', 'dev@damarcreative.my.id'),
               _buildInfoItem('Portfolio', 'https://damarcreative.my.id/'),
               _buildInfoItem('Website', 'https://quran.damarcreative.my.id/'),
