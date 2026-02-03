@@ -9,7 +9,7 @@ A minimalist, aesthetic, and "cozy" Quran application built with Flutter. Design
 ![cover](https://repository-images.githubusercontent.com/1148592274/4c5f6923-aafc-4670-a765-3a4c496e4674)
 
 
-## ✨ Features
+## Features
 
 - **Cozy UI**: Deep dark mode (`#0a0a0a`) with monochrome headers and green accents.
 - **Smooth Navigation**: Custom splash screen (native + Flutter) and seamless transitions.
@@ -20,7 +20,7 @@ A minimalist, aesthetic, and "cozy" Quran application built with Flutter. Design
 - **Developer Info**: Integrated informational modal.
 
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: Flutter (Dart)
 - **State Management**: `setState` (Clean & Simple)
@@ -29,7 +29,7 @@ A minimalist, aesthetic, and "cozy" Quran application built with Flutter. Design
 - **Caching**: `shared_preferences`
 - **typography**: `google_fonts`
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -55,7 +55,7 @@ A minimalist, aesthetic, and "cozy" Quran application built with Flutter. Design
     flutter run
     ```
 
-## 📦 Build for Android
+## Build for Android
 
 To generate an APK/Bundle:
 
@@ -65,7 +65,7 @@ flutter build apk --release
 flutter build appbundle --release
 ```
 
-## 🤝 Credits
+## Credits
 
 Developed by **Damar Jati** (Damar Creative).
 
