@@ -107,27 +107,39 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   void _openSettings() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0F172A), // Dark slate
+      backgroundColor: const Color(0xFF0A0A0A), // Black, consistent with Surah List modal
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                   Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2A2A),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                   const SizedBox(height: 24),
                    Text(
                     'Settings',
                     style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 24),
-                  const SizedBox(height: 24),
-                  Text('Jump to Ayah', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 12)),
-                  const SizedBox(height: 8),
+                  
+                  _buildSectionLabel('Jump to Ayah'),
+                  const SizedBox(height: 12),
                   if (widget.surah.totalAyahs > 20)
                     Row(
                       children: [
@@ -140,17 +152,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                               hintText: 'Enter Ayah Number (1-${widget.surah.totalAyahs})',
                               hintStyle: GoogleFonts.spaceGrotesk(color: const Color(0xFF555555)),
                               filled: true,
-                              fillColor: const Color(0xFF0F172A),
+                              fillColor: const Color(0xFF0A0A0A), // Match black background
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(0), // Sharp
                                 borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(0), // Sharp
                                 borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(0), // Sharp
                                 borderSide: const BorderSide(color: Color(0xFF40B779)),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -159,19 +171,28 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        IconButton(
-                          onPressed: () => _jumpToAyah(_ayahInputController.text, context),
-                          icon: const Icon(Icons.arrow_forward, color: Color(0xFF40B779)),
-                          style: IconButton.styleFrom(
-                             backgroundColor: const Color(0xFF1E293B),
-                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        Container(
+                          decoration: BoxDecoration(
+                              color: const Color(0xFF40B779), 
+                              border: Border.all(color: const Color(0xFF2A2A2A)),
+                              borderRadius: BorderRadius.circular(0) // Sharp
+                          ),
+                          child: IconButton(
+                            onPressed: () => _jumpToAyah(_ayahInputController.text, context),
+                            icon: const Icon(Icons.arrow_forward, color: Color(0xFF0A0A0A)), // Black icon for contrast
                           ),
                         ),
                       ],
                     )
                   else
-                    SizedBox(
-                      height: 50,
+                    Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: Colors.transparent, // Transparent for 'box'
+                            borderRadius: BorderRadius.circular(0), // Sharp
+                            border: Border.all(color: const Color(0xFF2A2A2A)),
+                        ),
+                      height: 70,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: widget.surah.totalAyahs,
@@ -184,15 +205,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                 Navigator.pop(context);
                               },
                               child: Container(
+                                width: 46,
                                 alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
                                 decoration: BoxDecoration(
+                                  color: const Color(0xFF0A0A0A),
                                   border: Border.all(color: const Color(0xFF2A2A2A)),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(0), // Sharp
                                 ),
                                 child: Text(
                                   '${index + 1}',
-                                  style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                                  style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -201,39 +223,44 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                       ),
                     ),
                   const SizedBox(height: 24),
-                  Text('Visibility', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 12)),
-                  SwitchListTile(
-                    title: Text('Arabic Text', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-                    value: _showArabic,
-                    activeColor: const Color(0xFF40B779),
-                    onChanged: (val) {
-                      setState(() => _showArabic = val);
-                      setModalState(() {});
-                    },
-                  ),
-                  SwitchListTile(
-                    title: Text('Translation / Tafsir', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
-                    value: _showTranslation,
-                    activeColor: const Color(0xFF40B779),
-                    onChanged: (val) {
-                      setState(() => _showTranslation = val);
-                      setModalState(() {});
-                    },
+                  _buildSectionLabel('Visibility'),
+                  const SizedBox(height: 12),
+                  Container(
+                     decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      borderRadius: BorderRadius.circular(0), // Sharp
+                    ),
+                    child: Column(
+                        children: [
+                             _buildSwitchTile('Arabic Text', _showArabic, (val) {
+                                  setState(() => _showArabic = val);
+                                  setModalState(() {});
+                             }),
+                             const Divider(height: 1, color: Color(0xFF2A2A2A)),
+                             _buildSwitchTile('Translation / Tafsir', _showTranslation, (val) {
+                                  setState(() => _showTranslation = val);
+                                  setModalState(() {});
+                             }),
+                        ],
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  Text('Edition', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 12)),
-                  const SizedBox(height: 8),
+                  _buildSectionLabel('Edition'),
+                  const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
+                       color: Colors.transparent,
                       border: Border.all(color: const Color(0xFF2A2A2A)),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(0), // Sharp
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _currentEdition,
-                        dropdownColor: const Color(0xFF0F172A),
+                        dropdownColor: const Color(0xFF0A0A0A),
                         isExpanded: true,
+                        icon: const Icon(Icons.expand_more, color: Color(0xFF40B779)),
                         style: GoogleFonts.spaceGrotesk(color: Colors.white),
                         items: _availableEditions.map((editionKey) {
                           return DropdownMenuItem(
@@ -262,6 +289,20 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
           }
         );
       },
+    );
+  }
+
+  Widget _buildSectionLabel(String label) {
+    return Text(label, style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 13, fontWeight: FontWeight.w600));
+  }
+  
+  Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
+    return SwitchListTile(
+      title: Text(title, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 15)),
+      value: value,
+      activeColor: const Color(0xFF40B779),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      onChanged: onChanged,
     );
   }
 
@@ -303,7 +344,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: Color(0xFF40B779)));
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+            return _buildErrorState();
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
              return const Center(child: Text('No Ayahs found', style: TextStyle(color: Colors.white)));
           }
@@ -346,6 +387,76 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.wifi_off_outlined, size: 64, color: const Color(0xFF40B779)),
+            const SizedBox(height: 24),
+            Text(
+              'Failed to Load Data',
+              style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Please check your internet connection.',
+              style: GoogleFonts.spaceGrotesk(fontSize: 14, color: const Color(0xFF888888)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _fetchData();
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF40B779),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+              ),
+              child: Text('Try Again', style: GoogleFonts.spaceGrotesk(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 48),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: const Color(0xFF2A2A2A)),
+                borderRadius: BorderRadius.circular(0),
+                color: const Color(0xFF111111),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.offline_pin_outlined, color: const Color(0xFF888888), size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Offline Access',
+                          style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'To access this page without internet, please download the "Arabic" and "Indonesian" editions via the Download button on the main page.',
+                    style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 13, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
