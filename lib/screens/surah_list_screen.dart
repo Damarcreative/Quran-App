@@ -670,36 +670,38 @@ class _DownloadManagerContentState extends State<_DownloadManagerContent> {
                const SizedBox(height: 12),
                ConstrainedBox(
                  constraints: const BoxConstraints(maxHeight: 200),
-                 child: ListView.builder(
-                   shrinkWrap: true,
-                   physics: const NeverScrollableScrollPhysics(),
-                   itemCount: _service.queue.length,
-                   itemBuilder: (context, index) {
-                     final edition = _service.queue[index];
-                     return Container(
-                       margin: const EdgeInsets.only(bottom: 8),
-                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                       width: double.infinity,
-                       decoration: BoxDecoration(
-                         border: Border.all(color: const Color(0xFF2A2A2A)),
-                         borderRadius: BorderRadius.circular(0),
-                       ),
-                       child: Row(
-                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                         children: [
-                           Text(edition, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14)),
-                           IconButton(
-                             icon: const Icon(Icons.close, size: 18, color: Color(0xFF888888)),
-                             padding: EdgeInsets.zero,
-                             constraints: const BoxConstraints(),
-                             onPressed: () => _service.removeFromQueue(edition),
+                 child: Scrollbar(
+                   child: ListView.builder(
+                       shrinkWrap: true,
+                       itemCount: _service.queue.length,
+                       itemBuilder: (context, index) {
+                         final edition = _service.queue[index];
+                         return Container(
+                           margin: const EdgeInsets.only(bottom: 8),
+                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                           width: double.infinity,
+                           decoration: BoxDecoration(
+                             border: Border.all(color: const Color(0xFF2A2A2A)),
+                             borderRadius: BorderRadius.circular(0),
                            ),
-                         ],
-                       ),
-                     );
-                   },
+                           child: Row(
+                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                             children: [
+                               Text(edition, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14)),
+                               IconButton(
+                                 icon: const Icon(Icons.close, size: 18, color: Color(0xFF888888)),
+                                 padding: EdgeInsets.zero,
+                                 constraints: const BoxConstraints(),
+                                 onPressed: () => _service.removeFromQueue(edition),
+                               ),
+                             ],
+                           ),
+                         );
+                       },
+                     ),
+                   ),
                  ),
-               ),
+
                const SizedBox(height: 24),
             ],
             
@@ -710,30 +712,31 @@ class _DownloadManagerContentState extends State<_DownloadManagerContent> {
                const SizedBox(height: 12),
                ConstrainedBox(
                  constraints: const BoxConstraints(maxHeight: 200),
-                 child: ListView.builder(
-                   shrinkWrap: true,
-                   physics: const NeverScrollableScrollPhysics(),
-                   itemCount: _service.downloadedEditions.length,
-                   itemBuilder: (context, index) {
-                     final edition = _service.downloadedEditions[index];
-                     return Container(
-                       margin: const EdgeInsets.only(bottom: 8),
-                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                       width: double.infinity,
-                       decoration: BoxDecoration(
-                         color: const Color(0xFF111111),
-                         border: Border.all(color: const Color(0xFF2A2A2A)),
-                         borderRadius: BorderRadius.circular(0),
-                       ),
-                       child: Row(
-                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                         children: [
-                           Text(edition, style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 14)),
-                           const Icon(Icons.check_circle_outline, color: Color(0xFF40B779), size: 18),
-                         ],
-                       ),
-                     );
-                   },
+                 child: Scrollbar(
+                   child: ListView.builder(
+                     shrinkWrap: true,
+                     itemCount: _service.downloadedEditions.length,
+                     itemBuilder: (context, index) {
+                       final edition = _service.downloadedEditions[index];
+                       return Container(
+                         margin: const EdgeInsets.only(bottom: 8),
+                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                         width: double.infinity,
+                         decoration: BoxDecoration(
+                           color: const Color(0xFF111111),
+                           border: Border.all(color: const Color(0xFF2A2A2A)),
+                           borderRadius: BorderRadius.circular(0),
+                         ),
+                         child: Row(
+                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                           children: [
+                             Text(edition, style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 14)),
+                             const Icon(Icons.check_circle_outline, color: Color(0xFF40B779), size: 18),
+                           ],
+                         ),
+                       );
+                     },
+                   ),
                  ),
                ),
             ],
