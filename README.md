@@ -6,7 +6,7 @@ A minimalist, aesthetic, and "cozy" Quran application built with Flutter. Design
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 
-![cover](https://repository-images.githubusercontent.com/1148592274/4c5f6923-aafc-4670-a765-3a4c496e4674)
+![cover](https://repository-images.githubusercontent.com/1148592274/61035ef6-dee9-4163-bb0f-d0b6b7e411ad)
 
 
 ## Features
