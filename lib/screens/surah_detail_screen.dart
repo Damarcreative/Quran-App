@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../models/surah.dart';
 import '../models/ayah.dart';
-import '../models/ayah.dart';
 import '../services/api_service.dart';
+import '../services/settings_service.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -22,18 +22,43 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
   final TextEditingController _ayahInputController = TextEditingController();
+  final SettingsService _settings = SettingsService();
 
   // Settings State
   bool _showArabic = true;
   bool _showTranslation = true;
-  String _currentEdition = 'id-indonesian';
+  late String _currentEdition;
   List<String> _availableEditions = [];
 
   @override
   void initState() {
     super.initState();
+    _currentEdition = _settings.defaultTranslation;
     _fetchData();
     _loadEditions();
+    _settings.addListener(_onSettingsChanged);
+  }
+
+  @override
+  void dispose() {
+    _settings.removeListener(_onSettingsChanged);
+    super.dispose();
+  }
+
+  void _onSettingsChanged() {
+    if (mounted) {
+      if (_currentEdition != _settings.defaultTranslation) {
+        // User changed default in Settings, so update current view unless manually overridden?
+        // Actually, if they changed 'Default', they expect it to apply.
+        // We will update it.
+        setState(() {
+          _currentEdition = _settings.defaultTranslation;
+          _fetchData();
+        });
+      } else {
+        setState(() {});
+      }
+    }
   }
 
   Future<void> _loadEditions() async {
@@ -105,9 +130,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   }
 
   void _openSettings() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0A0A0A), // Black, consistent with Surah List modal
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
@@ -126,7 +153,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2A2A2A),
+                        color: colorScheme.outline,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -134,7 +161,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                    const SizedBox(height: 24),
                    Text(
                     'Settings',
-                    style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                   ),
                   const SizedBox(height: 24),
                   
@@ -147,23 +174,23 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           child: TextField(
                             controller: _ayahInputController,
                             keyboardType: TextInputType.number,
-                            style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                            style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface),
                             decoration: InputDecoration(
-                              hintText: 'Enter Ayah Number (1-${widget.surah.totalAyahs})',
-                              hintStyle: GoogleFonts.spaceGrotesk(color: const Color(0xFF555555)),
+                              hintText: 'Enter Ayah Number (${_settings.formatNumber(1)}-${_settings.formatNumber(widget.surah.totalAyahs)})',
+                              hintStyle: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5)),
                               filled: true,
-                              fillColor: const Color(0xFF0A0A0A), // Match black background
+                              fillColor: Theme.of(context).cardColor,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(0), // Sharp
-                                borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                                borderSide: BorderSide(color: colorScheme.outline),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(0), // Sharp
-                                borderSide: const BorderSide(color: Color(0xFF2A2A2A)),
+                                borderSide: BorderSide(color: colorScheme.outline),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(0), // Sharp
-                                borderSide: const BorderSide(color: Color(0xFF40B779)),
+                                borderSide: BorderSide(color: colorScheme.primary),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             ),
@@ -173,13 +200,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         const SizedBox(width: 12),
                         Container(
                           decoration: BoxDecoration(
-                              color: const Color(0xFF40B779), 
-                              border: Border.all(color: const Color(0xFF2A2A2A)),
+                              color: colorScheme.primary, 
+                              border: Border.all(color: colorScheme.outline),
                               borderRadius: BorderRadius.circular(0) // Sharp
                           ),
                           child: IconButton(
                             onPressed: () => _jumpToAyah(_ayahInputController.text, context),
-                            icon: const Icon(Icons.arrow_forward, color: Color(0xFF0A0A0A)), // Black icon for contrast
+                            icon: const Icon(Icons.arrow_forward, color: Colors.black), 
                           ),
                         ),
                       ],
@@ -190,7 +217,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         decoration: BoxDecoration(
                             color: Colors.transparent, // Transparent for 'box'
                             borderRadius: BorderRadius.circular(0), // Sharp
-                            border: Border.all(color: const Color(0xFF2A2A2A)),
+                            border: Border.all(color: colorScheme.outline),
                         ),
                       height: 70,
                       child: ListView.builder(
@@ -208,13 +235,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                 width: 46,
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0A0A0A),
-                                  border: Border.all(color: const Color(0xFF2A2A2A)),
+                                  color: Theme.of(context).cardColor,
+                                  border: Border.all(color: colorScheme.outline),
                                   borderRadius: BorderRadius.circular(0), // Sharp
                                 ),
                                 child: Text(
-                                  '${index + 1}',
-                                  style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+                                  _settings.formatNumber(index + 1),
+                                  style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ),
@@ -228,7 +255,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                   Container(
                      decoration: BoxDecoration(
                       color: Colors.transparent,
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: colorScheme.outline),
                       borderRadius: BorderRadius.circular(0), // Sharp
                     ),
                     child: Column(
@@ -237,7 +264,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                   setState(() => _showArabic = val);
                                   setModalState(() {});
                              }),
-                             const Divider(height: 1, color: Color(0xFF2A2A2A)),
+                             Divider(height: 1, color: colorScheme.outline),
                              _buildSwitchTile('Translation / Tafsir', _showTranslation, (val) {
                                   setState(() => _showTranslation = val);
                                   setModalState(() {});
@@ -252,16 +279,16 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
                        color: Colors.transparent,
-                      border: Border.all(color: const Color(0xFF2A2A2A)),
+                      border: Border.all(color: colorScheme.outline),
                       borderRadius: BorderRadius.circular(0), // Sharp
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _currentEdition,
-                        dropdownColor: const Color(0xFF0A0A0A),
+                        dropdownColor: Theme.of(context).cardColor,
                         isExpanded: true,
-                        icon: const Icon(Icons.expand_more, color: Color(0xFF40B779)),
-                        style: GoogleFonts.spaceGrotesk(color: Colors.white),
+                        icon: Icon(Icons.expand_more, color: colorScheme.primary),
+                        style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface),
                         items: _availableEditions.map((editionKey) {
                           return DropdownMenuItem(
                             value: editionKey,
@@ -293,14 +320,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   }
 
   Widget _buildSectionLabel(String label) {
-    return Text(label, style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 13, fontWeight: FontWeight.w600));
+    return Text(label, style: GoogleFonts.spaceGrotesk(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 13, fontWeight: FontWeight.w600));
   }
   
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
-      title: Text(title, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 15)),
+      title: Text(title, style: GoogleFonts.spaceGrotesk(color: Theme.of(context).colorScheme.onSurface, fontSize: 15)),
       value: value,
-      activeColor: const Color(0xFF40B779),
+      activeColor: Theme.of(context).colorScheme.primary,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       onChanged: onChanged,
     );
@@ -308,22 +335,25 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           widget.surah.name,
           style: GoogleFonts.spaceGrotesk(
             fontWeight: FontWeight.bold,
             fontSize: 18,
-            color: Colors.white,
+            color: colorScheme.onSurface,
           ),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         scrolledUnderElevation: 0,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -333,7 +363,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
-            color: const Color(0xFF2A2A2A),
+            color: colorScheme.outline,
             height: 1.0,
           ),
         ),
@@ -342,11 +372,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         future: _ayahsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF40B779)));
+            return Center(child: CircularProgressIndicator(color: colorScheme.primary));
           } else if (snapshot.hasError) {
             return _buildErrorState();
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-             return const Center(child: Text('No Ayahs found', style: TextStyle(color: Colors.white)));
+             return Center(child: Text('No Ayahs found', style: TextStyle(color: colorScheme.onSurface)));
           }
 
           final ayahs = snapshot.data!;
@@ -365,18 +395,18 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         widget.surah.name,
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 32,
-                          color: Colors.white,
+                          color: colorScheme.onSurface,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                         '${widget.surah.nameAr} • ${widget.surah.type} • ${widget.surah.totalAyahs} Verses',
-                         style: GoogleFonts.spaceGrotesk(
-                           color: const Color(0xFF888888),
-                           fontSize: 16,
-                         ),
-                      ),
+                       Text(
+                          '${widget.surah.nameAr} • ${widget.surah.type} • ${_settings.formatNumber(widget.surah.totalAyahs)} Verses',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                            fontSize: 16,
+                          ),
+                       ),
                     ],
                   ),
                 );
@@ -392,23 +422,24 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   }
 
   Widget _buildErrorState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wifi_off_outlined, size: 64, color: const Color(0xFF40B779)),
+            Icon(Icons.wifi_off_outlined, size: 64, color: colorScheme.primary),
             const SizedBox(height: 24),
             Text(
               'Failed to Load Data',
-              style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               'Please check your internet connection.',
-              style: GoogleFonts.spaceGrotesk(fontSize: 14, color: const Color(0xFF888888)),
+              style: GoogleFonts.spaceGrotesk(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.5)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -419,7 +450,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 });
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF40B779),
+                backgroundColor: colorScheme.primary,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
               ),
@@ -429,28 +460,28 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF2A2A2A)),
+                border: Border.all(color: colorScheme.outline),
                 borderRadius: BorderRadius.circular(0),
-                color: const Color(0xFF111111),
+                color: Theme.of(context).cardColor,
               ),
               child: Column(
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.offline_pin_outlined, color: const Color(0xFF888888), size: 20),
+                      Icon(Icons.offline_pin_outlined, color: colorScheme.onSurface.withValues(alpha: 0.5), size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Offline Access',
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'To access this page without internet, please download the "Arabic" and "Indonesian" editions via the Download button on the main page.',
-                    style: GoogleFonts.spaceGrotesk(color: const Color(0xFF888888), fontSize: 13, height: 1.5),
+                    'To access this page without internet, please download the "Arabic" and "${_settings.formatEditionName(_settings.defaultTranslation)}" editions via the Download button on the main page.',
+                    style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 13, height: 1.5),
                   ),
                 ],
               ),
@@ -462,11 +493,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   }
 
   Widget _buildAyahItem(Ayah ayah) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Color(0xFF2A2A2A)),
+          bottom: BorderSide(color: colorScheme.outline),
         ),
       ),
       child: Column(
@@ -478,14 +511,14 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0A0A0A),
-                  border: Border.all(color: const Color(0xFF2A2A2A)),
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  border: Border.all(color: colorScheme.outline),
                   borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
-                  '${ayah.number}',
+                  _settings.formatNumber(ayah.number),
                   style: GoogleFonts.spaceGrotesk(
-                    color: const Color(0xFF40B779),
+                    color: colorScheme.primary,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -500,7 +533,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               ayah.arabic,
               textAlign: TextAlign.right,
               style: GoogleFonts.amiri(
-                color: Colors.white,
+                color: colorScheme.onSurface,
                 fontSize: 32,
                 height: 2.5,
               ),
@@ -508,15 +541,40 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
           ],
           if (_showTranslation) ...[
             const SizedBox(height: 24),
-            Text(
-              ayah.translation,
-              textAlign: TextAlign.left,
-              style: GoogleFonts.spaceGrotesk(
-                color: const Color(0xFFBBBBBB),
-                fontSize: 18,
-                height: 1.6,
-              ),
-            ),
+            if (ayah.translation.trim().isNotEmpty)
+              Text(
+                ayah.translation,
+                textAlign: TextAlign.left,
+                style: GoogleFonts.spaceGrotesk(
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  fontSize: 18,
+                  height: 1.6,
+                ),
+              )
+            else
+               Container(
+                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                 decoration: BoxDecoration(
+                   color: colorScheme.error.withValues(alpha: 0.1),
+                   borderRadius: BorderRadius.circular(4),
+                   border: Border.all(color: colorScheme.error.withValues(alpha: 0.2))
+                 ),
+                 child: Row(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     Icon(Icons.wifi_off, size: 14, color: colorScheme.error),
+                     const SizedBox(width: 8),
+                     Text(
+                       "Translation unavailable offline",
+                       style: GoogleFonts.spaceGrotesk(
+                         color: colorScheme.error,
+                         fontSize: 12,
+                         fontStyle: FontStyle.italic
+                       ),
+                     ),
+                   ],
+                 ),
+               )
           ],
         ],
       ),

@@ -4,7 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'surah_list_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final Widget? nextScreen;
+  const SplashScreen({super.key, this.nextScreen});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -17,7 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 2, milliseconds: 500), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SurahListScreen()),
+        MaterialPageRoute(builder: (context) => widget.nextScreen ?? const SurahListScreen()),
       );
     });
   }
