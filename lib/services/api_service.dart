@@ -210,10 +210,8 @@ class ApiService {
 
   Future<List<Ayah>> fetchSurahDetails(int surahNumber, {String edition = 'id-indonesian'}) async {
     try {
-      // 1. Fetch Arabic text (uses Arabic cache if available)
       final List<Ayah> arabicAyahs = await fetchArabicOnly(surahNumber);
       
-      // 2. Fetch Translation and merge (uses Full cache if available)
       return await fetchTranslation(surahNumber, arabicAyahs, edition: edition);
       
     } catch (e) {

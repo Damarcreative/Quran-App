@@ -302,7 +302,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     
     final colorScheme = Theme.of(context).colorScheme;
     
-    // Format date string based on settings (e.g. 8 -> ٨)
     final dateFormatted = _settings.formatString(DateFormat('d').format(_selectedDate));
     final monthYear = DateFormat('MMMM yyyy').format(_selectedDate);
     final monthYearFormatted = _settings.formatString(monthYear);
@@ -556,7 +555,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
   Widget _buildTimeRow(String label, String time, {bool isHighlight = false}) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Format the time string (e.g. 04:30 -> ٠٤:٣٠)
     final formattedTime = _settings.formatString(time);
     
     return Container(

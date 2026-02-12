@@ -53,7 +53,6 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ... (unchanged methods)
 
   Future<void> _saveDownloadedList() async {
     final prefs = await SharedPreferences.getInstance();

@@ -100,7 +100,6 @@ class _MainScreenState extends State<MainScreen> {
               children: _screens,
             ),
             
-            // Mini Player
             if (!_showFullPlayer && hasAudio)
               Positioned(
                 left: 0, 
@@ -111,7 +110,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
 
-            // Full Player Lyrics View
             if (_showFullPlayer && hasAudio)
               Positioned.fill(
                 child: FullPlayerView(

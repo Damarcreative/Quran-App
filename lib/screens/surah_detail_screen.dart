@@ -48,9 +48,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   void _onSettingsChanged() {
     if (mounted) {
       if (_currentEdition != _settings.defaultTranslation) {
-        // User changed default in Settings, so update current view unless manually overridden?
-        // Actually, if they changed 'Default', they expect it to apply.
-        // We will update it.
         setState(() {
           _currentEdition = _settings.defaultTranslation;
           _fetchData();
@@ -80,7 +77,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       
     } catch (e) {
       debugPrint('Error loading editions: $e');
-      // Fallback
       setState(() {
         _availableEditions = ['id-indonesian', 'en-sahih'];
       });
@@ -105,9 +101,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
           final existing = ayahs[basmalahIndex];
           ayahs[basmalahIndex] = Ayah(
             number: 0,
-            arabic: basmalahArabic, // Force the Arabic text
+            arabic: basmalahArabic,
             translation: existing.translation.isNotEmpty ? existing.translation : basmalahTranslation,
           );
+
         } else {
           ayahs.insert(0, Ayah(
             number: 0,
@@ -181,15 +178,15 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                               filled: true,
                               fillColor: Theme.of(context).cardColor,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(0), // Sharp
+                                borderRadius: BorderRadius.circular(0),
                                 borderSide: BorderSide(color: colorScheme.outline),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(0), // Sharp
+                                borderRadius: BorderRadius.circular(0),
                                 borderSide: BorderSide(color: colorScheme.outline),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(0), // Sharp
+                                borderRadius: BorderRadius.circular(0),
                                 borderSide: BorderSide(color: colorScheme.primary),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -202,7 +199,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           decoration: BoxDecoration(
                               color: colorScheme.primary, 
                               border: Border.all(color: colorScheme.outline),
-                              borderRadius: BorderRadius.circular(0) // Sharp
+                              borderRadius: BorderRadius.circular(0)
                           ),
                           child: IconButton(
                             onPressed: () => _jumpToAyah(_ayahInputController.text, context),
@@ -215,8 +212,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                     Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                            color: Colors.transparent, // Transparent for 'box'
-                            borderRadius: BorderRadius.circular(0), // Sharp
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(0),
                             border: Border.all(color: colorScheme.outline),
                         ),
                       height: 70,
@@ -237,7 +234,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).cardColor,
                                   border: Border.all(color: colorScheme.outline),
-                                  borderRadius: BorderRadius.circular(0), // Sharp
+                                  borderRadius: BorderRadius.circular(0),
                                 ),
                                 child: Text(
                                   _settings.formatNumber(index + 1),
@@ -256,7 +253,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                      decoration: BoxDecoration(
                       color: Colors.transparent,
                       border: Border.all(color: colorScheme.outline),
-                      borderRadius: BorderRadius.circular(0), // Sharp
+                      borderRadius: BorderRadius.circular(0),
                     ),
                     child: Column(
                         children: [
@@ -280,7 +277,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                     decoration: BoxDecoration(
                        color: Colors.transparent,
                       border: Border.all(color: colorScheme.outline),
-                      borderRadius: BorderRadius.circular(0), // Sharp
+                      borderRadius: BorderRadius.circular(0),
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
@@ -524,7 +521,6 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                   ),
                 ),
               ),
-              // Optionals (Share, Audio)
             ],
           ),
           if (_showArabic) ...[

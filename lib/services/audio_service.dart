@@ -20,20 +20,16 @@ class AudioService extends ChangeNotifier {
   final Dio _dio = Dio();
   String? _localPath;
   
-  // Locks for downloads
   final Map<String, Lock> _downloadLocks = {};
   
-  // State
   Surah? _currentSurah;
   int _currentAyah = 1;
   bool _isPlaying = false;
   bool _isBuffering = false;
   
-  // Playback Options
   RepeatMode _repeatMode = RepeatMode.autoNext;
   SurahOrder _surahOrder = SurahOrder.ascending;
 
-  // Additional state for logic
   bool _isPlayingBismillah = false; 
   bool _isCompletionHandled = false;
   bool _isChangingTrack = false; 
@@ -43,7 +39,6 @@ class AudioService extends ChangeNotifier {
 
   ConcatenatingAudioSource? _playlist;
   
-  // Getters
   Surah? get currentSurah => _currentSurah;
   int get currentAyah => _currentAyah;
   bool get isPlaying => _isPlaying;
@@ -95,14 +90,11 @@ class AudioService extends ChangeNotifier {
   void playNextSurah() {
      if (_currentSurah == null) return;
      
-     // Determine direction
      final direction = _surahOrder == SurahOrder.ascending ? 1 : -1;
      
-     // Base is either pending target or current surah
      int baseSurah = _pendingSurahTarget ?? _currentSurah!.number;
      int nextNum = baseSurah + direction;
 
-     // Clamp within 1-114
      if (nextNum >= 1 && nextNum <= 114) {
         _pendingSurahTarget = nextNum;
         
@@ -148,7 +140,6 @@ class AudioService extends ChangeNotifier {
     _localPath = '${dir.path}/audio';
     await Directory(_localPath!).create(recursive: true);
 
-    // Listen to playback state
     _player.playerStateStream.listen((state) {
       _isPlaying = state.playing;
       _isBuffering = state.processingState == ProcessingState.buffering || 
@@ -156,7 +147,6 @@ class AudioService extends ChangeNotifier {
       notifyListeners();
     });
 
-    // Listen to current item change for UI update and progressive loading
     _player.currentIndexStream.listen((index) {
       if (index != null && _playlist != null && index < _playlist!.length) {
         final source = _playlist!.children[index] as UriAudioSource;
@@ -172,7 +162,6 @@ class AudioService extends ChangeNotifier {
       }
     });
 
-    // Listen for completion (in case playlist ends)
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
          if (!_isChangingTrack && !_isCompletionHandled) {
@@ -194,14 +183,12 @@ class AudioService extends ChangeNotifier {
     _isChangingTrack = true;
     notifyListeners(); 
 
-    // Stop current playback quickly
     try {
       await _player.stop();
     } catch (e) {
-      // Ignore stop errors (e.g. abort/interrupted)
     }
     
-    if (opId != _loadingOperationId) return; // Cancelled
+    if (opId != _loadingOperationId) return;
 
     try {
       final List<AudioSource> initialSources = [];
@@ -243,7 +230,7 @@ class AudioService extends ChangeNotifier {
          }
       }
       
-      if (opId != _loadingOperationId) return; // Cancelled before play
+      if (opId != _loadingOperationId) return;
       
       _isChangingTrack = false;
       _player.play();
@@ -256,7 +243,7 @@ class AudioService extends ChangeNotifier {
       if (opId == _loadingOperationId) {
          debugPrint("Error initializing playlist: $e");
          _isChangingTrack = false;
-         notifyListeners(); // Ensure loading state is cleared on error
+         notifyListeners();
       }
     }
   }
@@ -336,7 +323,6 @@ class AudioService extends ChangeNotifier {
           await _api.fetchSurahDetails(nextSurahNum);
 
           // 2. Prefetch Audio for Bismillah & First Ayah
-          // Bismillah (Ayah 1 of 1? No, 1:1 is Bismillah)
           // File 1:1 (Al-Fatihah 1) is Bismillah.
           // But strict Bismillah audio is often shared.
           // We'll just prefetch 1,1 (re-used often) and NextSurah,1.
@@ -372,7 +358,6 @@ class AudioService extends ChangeNotifier {
      final int opId = ++_loadingOperationId; // Start new operation
 
      try {
-       // Use cached surah list (should be instant from SharedPreferences)
        final surahs = await ApiService().fetchSurahs();
        if (opId != _loadingOperationId) return;
 
@@ -384,7 +369,7 @@ class AudioService extends ChangeNotifier {
        // Update state IMMEDIATELY before loading audio
        _currentSurah = nextSurah;
        _currentAyah = 1;
-       notifyListeners(); // UI updates NOW
+       notifyListeners();
        
        // Now play with bismillah-first strategy
        await _playWithBismillahFirst(nextSurah, opId);
@@ -426,7 +411,6 @@ class AudioService extends ChangeNotifier {
         initialSources.add(AudioSource.uri(uri, tag: 0));
       }
 
-      // Add ayah 1 (quick check only)
       final ayah1Path = await _getFileWithLock(surah.number, 1, onlyCheck: true);
       if (opId != _loadingOperationId) return;
 
@@ -497,7 +481,6 @@ class AudioService extends ChangeNotifier {
     if (_player.hasNext) {
       await _player.seekToNext();
     } else {
-      // Manually trigger completion logic (Next Surah)
       _handleSurahCompletion();
     }
   }
@@ -518,7 +501,6 @@ class AudioService extends ChangeNotifier {
           playAyah(_currentSurah!, _currentAyah - 1);
        } else {
          // Prev Surah?
-         // _handleSurahPrev();
        }
      }
   }
@@ -531,7 +513,6 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  // Thread-safe file getter
   Future<String?> _getFileWithLock(int surahNum, int ayahNum, {bool onlyCheck = false}) async {
     if (_localPath == null) await init();
 

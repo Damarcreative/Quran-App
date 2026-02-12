@@ -81,8 +81,6 @@ class _FullPlayerViewState extends State<FullPlayerView> {
     setState(() { _loading = true; _error = null; });
 
     try {
-      // STEP 1: Try full cache first (fastest)
-      // STEP 1: Try full cache first (fastest)
       final cachedAyahs = await _apiService.fetchSurahDetails(surah.number, edition: _settings.defaultTranslation);
       
       // Race condition check
@@ -102,7 +100,6 @@ class _FullPlayerViewState extends State<FullPlayerView> {
         return;
       }
 
-      // STEP 2: Fetch Arabic only first (faster)
       final arabicAyahs = await _apiService.fetchArabicOnly(surah.number);
       
       // Race condition check
@@ -145,7 +142,6 @@ class _FullPlayerViewState extends State<FullPlayerView> {
     final int surahNum = _audioService.currentSurah?.number ?? 0;
     
     if (_hasBismillah(surahNum)) {
-       // Index 0 is Bismillah (Ayah 0)
        // Index 1 is Ayah 1
        // So if ayahNumber comes as 0 -> index 0
        // If ayahNumber comes as 1 -> index 1
@@ -337,7 +333,6 @@ class _FullPlayerViewState extends State<FullPlayerView> {
         return GestureDetector(
           onTap: () {
              if (isBismillah) {
-                // Play from start (Ayah 1 includes Bismillah logic)
                 _audioService.playAyah(_audioService.currentSurah!, 1);
              } else {
                 _audioService.playAyah(_audioService.currentSurah!, ayah.number);
@@ -357,7 +352,6 @@ class _FullPlayerViewState extends State<FullPlayerView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Ayah number badge (same style as surah_detail_screen)
                 if (!isBismillah)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -425,7 +419,6 @@ class _FullPlayerViewState extends State<FullPlayerView> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-           // Ayah Navigation row (Top)
            Row(
              mainAxisAlignment: MainAxisAlignment.spaceBetween,
              children: [

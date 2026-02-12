@@ -24,9 +24,8 @@ class _SurahListScreenState extends State<SurahListScreen> with TickerProviderSt
   @override
   void initState() {
     super.initState();
-    // Initialize Download Service
     DownloadService().init();
-    _settings.addListener(_onSettingsUpdate); // Listen to settings
+    _settings.addListener(_onSettingsUpdate);
 
     _surahListFuture = ApiService().fetchSurahs().then((surahs) {
       if (mounted) {
@@ -123,9 +122,9 @@ class _SurahListScreenState extends State<SurahListScreen> with TickerProviderSt
           const SizedBox(width: 8),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60.0), // Reduced height further
+          preferredSize: const Size.fromHeight(60.0),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4), // Reduced vertical padding
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
             child: TextField(
               controller: _searchController,
               onChanged: _filterSurahs,
@@ -217,7 +216,7 @@ class _SurahListScreenState extends State<SurahListScreen> with TickerProviderSt
                             crossAxisCount: crossAxisCount,
                             crossAxisSpacing: 24,
                             mainAxisSpacing: 24,
-                            childAspectRatio: 2.2, // Shorter cards for grid
+                            childAspectRatio: 2.2,
                           ),
                           itemCount: _filteredSurahs.length,
                           itemBuilder: (context, index) {
@@ -310,7 +309,7 @@ class _SurahListScreenState extends State<SurahListScreen> with TickerProviderSt
                         surah.name,
                         style: GoogleFonts.spaceGrotesk(
                           color: colorScheme.onSurface,
-                          fontSize: 18, // Slightly smaller to fit single line better
+                          fontSize: 18,
                           fontWeight: FontWeight.w600,
                           height: 1.2,
                         ),
@@ -323,7 +322,7 @@ class _SurahListScreenState extends State<SurahListScreen> with TickerProviderSt
                       surah.nameAr,
                       style: GoogleFonts.amiri(
                         color: colorScheme.onSurface.withValues(alpha: 0.5),
-                        fontSize: 20, // Slightly larger for Arabic legibility
+                        fontSize: 20,
                         height: 1.0,
                       ),
                     ),

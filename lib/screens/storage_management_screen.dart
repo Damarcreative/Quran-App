@@ -214,7 +214,6 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
          final surahNum = item['surahNumber'];
          final surah = _surahMap[surahNum];
          
-         // Use Name only as requested ("tulis aja nama surah nya apa")
          final surahName = surah != null ? surah.name : 'Surah $surahNum';
          final totalAyahs = surah?.totalAyahs ?? 0;
          

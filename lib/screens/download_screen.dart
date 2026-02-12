@@ -229,7 +229,6 @@ class _DownloadScreenState extends State<DownloadScreen> {
               const SizedBox(height: 24),
             ],
 
-            // Queue List (Flexible for scrolling if many items)
             if (_service.queue.isNotEmpty) ...[
                Text('Queue:', style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
                const SizedBox(height: 12),

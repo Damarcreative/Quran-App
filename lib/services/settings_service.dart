@@ -35,7 +35,6 @@ class SettingsService extends ChangeNotifier {
 
   /// Initialize and load saved settings
   Future<void> init() async {
-    // Ensure editions are loaded, even if already initialized (fixes Hot Reload issues)
     if (_availableTranslations.length <= 2) {
        await _loadEditions();
     }
@@ -239,7 +238,6 @@ class SettingsService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().toList();
     
-    // Remove cache entries only (preserve settings)
     for (final key in keys) {
       if (key.startsWith('cache_') || 
           key.startsWith('prayer_times_') ||
@@ -295,7 +293,6 @@ class SettingsService extends ChangeNotifier {
         for (final entity in files) {
           if (entity is File) {
             final filename = entity.uri.pathSegments.last;
-            // Filename format: 001-001.mp3 (Surah-Ayah)
             final parts = filename.split('-');
             if (parts.length == 2) {
               final surahNum = int.tryParse(parts[0]);
@@ -359,7 +356,6 @@ class SettingsService extends ChangeNotifier {
             if (value != null) {
               surahSizes[surahNum] = (surahSizes[surahNum] ?? 0) + value.length;
               // If we have any cache for this surah, we assume it's downloaded
-              // In reality, detailed ayah counts come from the JSON content itself, 
               // but for "Manage Storage" we just need to know if it's there.
               // The UI will look up the totalAyahs from metadata.
             }
@@ -396,7 +392,6 @@ class SettingsService extends ChangeNotifier {
          final parts = key.split('_');
          if (parts.length >= 5) {
             // Reconstruct edition if it contains underscores
-            // We take everything after index 2 (number) and before last (v4)
             // But for safety let's stick to index 3 as our editions are simple
             String edition = parts[3]; 
             
