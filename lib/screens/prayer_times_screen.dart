@@ -69,33 +69,43 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         (e) => e['provinsi'] == savedProvince,
         orElse: () => null,
       );
+
       if (provinceData != null) {
-        setState(() {
-          _selectedProvince = savedProvince;
-          _cities = List<String>.from(provinceData['kota_kabupaten']);
-          if (_cities.contains(savedCity)) {
-            _selectedCity = savedCity;
-            _fetchPrayerTimes(); // Fetch if valid
-            return;
+        final cities = List<String>.from(provinceData['kota_kabupaten']);
+
+        if (cities.contains(savedCity)) {
+          if (mounted) {
+            setState(() {
+              _selectedProvince = savedProvince;
+              _cities = cities;
+              _selectedCity = savedCity;
+            });
+            _fetchPrayerTimes();
+            return; // Successfully loaded saved location
           }
-        });
+        }
       }
     }
 
-    // Default to Jakarta if no saved location
+    // Default to Jakarta if no saved location or invalid saved location
     final jakartaData = _locations.firstWhere(
       (e) => e['provinsi'] == 'DKI Jakarta',
       orElse: () => null,
     );
+
     if (jakartaData != null) {
-      setState(() {
-        _selectedProvince = 'DKI Jakarta';
-        _cities = List<String>.from(jakartaData['kota_kabupaten']);
-        _selectedCity = 'Kota Jakarta';
-      });
-      _fetchPrayerTimes();
+      if (mounted) {
+        setState(() {
+          _selectedProvince = 'DKI Jakarta';
+          _cities = List<String>.from(jakartaData['kota_kabupaten']);
+          _selectedCity = 'Kota Jakarta';
+        });
+        _fetchPrayerTimes();
+      }
     } else {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
