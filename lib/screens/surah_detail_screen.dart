@@ -20,7 +20,8 @@ class SurahDetailScreen extends StatefulWidget {
 class _SurahDetailScreenState extends State<SurahDetailScreen> {
   late Future<List<Ayah>> _ayahsFuture;
   final ItemScrollController _itemScrollController = ItemScrollController();
-  final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   final TextEditingController _ayahInputController = TextEditingController();
   final SettingsService _settings = SettingsService();
 
@@ -68,13 +69,12 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
       allEditions.removeWhere((element) => element == 'arabic');
 
       List<String> pinned = ['id-indonesian', 'en-sahih'];
-      
+
       allEditions.removeWhere((element) => pinned.contains(element));
-      
+
       setState(() {
         _availableEditions = [...pinned, ...allEditions];
       });
-      
     } catch (e) {
       debugPrint('Error loading editions: $e');
       setState(() {
@@ -86,49 +86,75 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
   String _formatEditionName(String editionId) {
     if (editionId == 'id-indonesian') return 'Indonesian Translation';
     if (editionId == 'en-sahih') return 'English (Sahih International)';
-    
-    return editionId.split('-').map((word) => word[0].toUpperCase() + word.substring(1)).join(' ');
+
+    return editionId
+        .split('-')
+        .map((word) => word[0].toUpperCase() + word.substring(1))
+        .join(' ');
   }
 
   void _fetchData() {
-    _ayahsFuture = ApiService().fetchSurahDetails(widget.surah.number, edition: _currentEdition).then((ayahs) {
-      if (widget.surah.number != 1 && widget.surah.number != 9) {
-        final int basmalahIndex = ayahs.indexWhere((a) => a.number == 0);
-        const String basmalahArabic = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
-        const String basmalahTranslation = 'Dengan menyebut nama Allah Yang Maha Pengasih lagi Maha Penyayang';
+    _ayahsFuture = ApiService()
+        .fetchSurahDetails(widget.surah.number, edition: _currentEdition)
+        .then((ayahs) async {
+          if (widget.surah.number != 1 && widget.surah.number != 9) {
+            final int basmalahIndex = ayahs.indexWhere((a) => a.number == 0);
+            const String basmalahArabic =
+                'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
+            // Fetch Basmalah from Surah 1 (Al-Fatihah) Ayah 1
+            String basmalahTranslation;
+            try {
+              final fatihah = await ApiService().fetchSurahDetails(
+                1,
+                edition: _currentEdition,
+              );
+              if (fatihah.isNotEmpty) {
+                basmalahTranslation = fatihah.first.translation;
+              } else {
+                basmalahTranslation =
+                    'In the name of Allah, the Entirely Merciful, the Especially Merciful';
+              }
+            } catch (e) {
+              basmalahTranslation =
+                  'In the name of Allah, the Entirely Merciful, the Especially Merciful';
+            }
 
-        if (basmalahIndex != -1) {
-          final existing = ayahs[basmalahIndex];
-          ayahs[basmalahIndex] = Ayah(
-            number: 0,
-            arabic: basmalahArabic,
-            translation: existing.translation.isNotEmpty ? existing.translation : basmalahTranslation,
-          );
-
-        } else {
-          ayahs.insert(0, Ayah(
-            number: 0,
-            arabic: basmalahArabic,
-            translation: basmalahTranslation,
-          ));
-        }
-      }
-      return ayahs;
-    });
+            if (basmalahIndex != -1) {
+              final existing = ayahs[basmalahIndex];
+              ayahs[basmalahIndex] = Ayah(
+                number: 0,
+                arabic: basmalahArabic,
+                translation: existing.translation.isNotEmpty
+                    ? existing.translation
+                    : basmalahTranslation,
+              );
+            } else {
+              ayahs.insert(
+                0,
+                Ayah(
+                  number: 0,
+                  arabic: basmalahArabic,
+                  translation: basmalahTranslation,
+                ),
+              );
+            }
+          }
+          return ayahs;
+        });
   }
 
   void _jumpToAyah(String value, BuildContext modalContext) {
     if (value.isEmpty) return;
     final int? ayahNum = int.tryParse(value);
     if (ayahNum != null && ayahNum > 0 && ayahNum <= widget.surah.totalAyahs) {
-        _itemScrollController.jumpTo(index: ayahNum); 
-        Navigator.pop(context);
+      _itemScrollController.jumpTo(index: ayahNum);
+      Navigator.pop(context);
     }
   }
 
   void _openSettings() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -140,12 +166,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
-              padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                24,
+                24,
+                MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Center(
+                  Center(
                     child: Container(
                       width: 40,
                       height: 4,
@@ -155,13 +186,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                       ),
                     ),
                   ),
-                   const SizedBox(height: 24),
-                   Text(
+                  const SizedBox(height: 24),
+                  Text(
                     'Settings',
-                    style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   _buildSectionLabel('Jump to Ayah'),
                   const SizedBox(height: 12),
                   if (widget.surah.totalAyahs > 20)
@@ -171,25 +206,41 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                           child: TextField(
                             controller: _ayahInputController,
                             keyboardType: TextInputType.number,
-                            style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface),
+                            style: GoogleFonts.spaceGrotesk(
+                              color: colorScheme.onSurface,
+                            ),
                             decoration: InputDecoration(
-                              hintText: 'Enter Ayah Number (${_settings.formatNumber(1)}-${_settings.formatNumber(widget.surah.totalAyahs)})',
-                              hintStyle: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5)),
+                              hintText:
+                                  'Enter Ayah Number (${_settings.formatNumber(1)}-${_settings.formatNumber(widget.surah.totalAyahs)})',
+                              hintStyle: GoogleFonts.spaceGrotesk(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
                               filled: true,
                               fillColor: Theme.of(context).cardColor,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(0),
-                                borderSide: BorderSide(color: colorScheme.outline),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline,
+                                ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(0),
-                                borderSide: BorderSide(color: colorScheme.outline),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline,
+                                ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(0),
-                                borderSide: BorderSide(color: colorScheme.primary),
+                                borderSide: BorderSide(
+                                  color: colorScheme.primary,
+                                ),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                             ),
                             onSubmitted: (val) => _jumpToAyah(val, context),
                           ),
@@ -197,25 +248,29 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         const SizedBox(width: 12),
                         Container(
                           decoration: BoxDecoration(
-                              color: colorScheme.primary, 
-                              border: Border.all(color: colorScheme.outline),
-                              borderRadius: BorderRadius.circular(0)
+                            color: colorScheme.primary,
+                            border: Border.all(color: colorScheme.outline),
+                            borderRadius: BorderRadius.circular(0),
                           ),
                           child: IconButton(
-                            onPressed: () => _jumpToAyah(_ayahInputController.text, context),
-                            icon: const Icon(Icons.arrow_forward, color: Colors.black), 
+                            onPressed: () =>
+                                _jumpToAyah(_ayahInputController.text, context),
+                            icon: const Icon(
+                              Icons.arrow_forward,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ],
                     )
                   else
                     Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(0),
-                            border: Border.all(color: colorScheme.outline),
-                        ),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(0),
+                        border: Border.all(color: colorScheme.outline),
+                      ),
                       height: 70,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -225,7 +280,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                             padding: const EdgeInsets.only(right: 8),
                             child: InkWell(
                               onTap: () {
-                                _itemScrollController.jumpTo(index: index + 1); 
+                                _itemScrollController.jumpTo(index: index + 1);
                                 Navigator.pop(context);
                               },
                               child: Container(
@@ -233,12 +288,17 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).cardColor,
-                                  border: Border.all(color: colorScheme.outline),
+                                  border: Border.all(
+                                    color: colorScheme.outline,
+                                  ),
                                   borderRadius: BorderRadius.circular(0),
                                 ),
                                 child: Text(
                                   _settings.formatNumber(index + 1),
-                                  style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),
@@ -250,32 +310,39 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                   _buildSectionLabel('Visibility'),
                   const SizedBox(height: 12),
                   Container(
-                     decoration: BoxDecoration(
+                    decoration: BoxDecoration(
                       color: Colors.transparent,
                       border: Border.all(color: colorScheme.outline),
                       borderRadius: BorderRadius.circular(0),
                     ),
                     child: Column(
-                        children: [
-                             _buildSwitchTile('Arabic Text', _showArabic, (val) {
-                                  setState(() => _showArabic = val);
-                                  setModalState(() {});
-                             }),
-                             Divider(height: 1, color: colorScheme.outline),
-                             _buildSwitchTile('Translation / Tafsir', _showTranslation, (val) {
-                                  setState(() => _showTranslation = val);
-                                  setModalState(() {});
-                             }),
-                        ],
+                      children: [
+                        _buildSwitchTile('Arabic Text', _showArabic, (val) {
+                          setState(() => _showArabic = val);
+                          setModalState(() {});
+                        }),
+                        Divider(height: 1, color: colorScheme.outline),
+                        _buildSwitchTile(
+                          'Translation / Tafsir',
+                          _showTranslation,
+                          (val) {
+                            setState(() => _showTranslation = val);
+                            setModalState(() {});
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   _buildSectionLabel('Edition'),
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                       color: Colors.transparent,
+                      color: Colors.transparent,
                       border: Border.all(color: colorScheme.outline),
                       borderRadius: BorderRadius.circular(0),
                     ),
@@ -284,8 +351,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         value: _currentEdition,
                         dropdownColor: Theme.of(context).cardColor,
                         isExpanded: true,
-                        icon: Icon(Icons.expand_more, color: colorScheme.primary),
-                        style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface),
+                        icon: Icon(
+                          Icons.expand_more,
+                          color: colorScheme.primary,
+                        ),
+                        style: GoogleFonts.spaceGrotesk(
+                          color: colorScheme.onSurface,
+                        ),
                         items: _availableEditions.map((editionKey) {
                           return DropdownMenuItem(
                             value: editionKey,
@@ -298,8 +370,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         onChanged: (val) {
                           if (val != null) {
                             setState(() {
-                               _currentEdition = val;
-                               _fetchData();
+                              _currentEdition = val;
+                              _fetchData();
                             });
                             Navigator.pop(context);
                           }
@@ -310,21 +382,34 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 ],
               ),
             );
-          }
+          },
         );
       },
     );
   }
 
   Widget _buildSectionLabel(String label) {
-    return Text(label, style: GoogleFonts.spaceGrotesk(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 13, fontWeight: FontWeight.w600));
+    return Text(
+      label,
+      style: GoogleFonts.spaceGrotesk(
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+    );
   }
-  
+
   Widget _buildSwitchTile(String title, bool value, Function(bool) onChanged) {
     return SwitchListTile(
-      title: Text(title, style: GoogleFonts.spaceGrotesk(color: Theme.of(context).colorScheme.onSurface, fontSize: 15)),
+      title: Text(
+        title,
+        style: GoogleFonts.spaceGrotesk(
+          color: Theme.of(context).colorScheme.onSurface,
+          fontSize: 15,
+        ),
+      ),
       value: value,
-      activeColor: Theme.of(context).colorScheme.primary,
+      activeThumbColor: Theme.of(context).colorScheme.primary,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       onChanged: onChanged,
     );
@@ -359,21 +444,25 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: colorScheme.outline,
-            height: 1.0,
-          ),
+          child: Container(color: colorScheme.outline, height: 1.0),
         ),
       ),
       body: FutureBuilder<List<Ayah>>(
         future: _ayahsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+            return Center(
+              child: CircularProgressIndicator(color: colorScheme.primary),
+            );
           } else if (snapshot.hasError) {
             return _buildErrorState();
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-             return Center(child: Text('No Ayahs found', style: TextStyle(color: colorScheme.onSurface)));
+            return Center(
+              child: Text(
+                'No Ayahs found',
+                style: TextStyle(color: colorScheme.onSurface),
+              ),
+            );
           }
 
           final ayahs = snapshot.data!;
@@ -397,13 +486,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                       Text(
-                          '${widget.surah.nameAr} • ${widget.surah.type} • ${_settings.formatNumber(widget.surah.totalAyahs)} Verses',
-                          style: GoogleFonts.spaceGrotesk(
-                            color: colorScheme.onSurface.withValues(alpha: 0.5),
-                            fontSize: 16,
-                          ),
-                       ),
+                      Text(
+                        '${widget.surah.nameAr} • ${widget.surah.type} • ${_settings.formatNumber(widget.surah.totalAyahs)} Verses',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          fontSize: 16,
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -430,13 +519,20 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             const SizedBox(height: 24),
             Text(
               'Failed to Load Data',
-              style: GoogleFonts.spaceGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               'Please check your internet connection.',
-              style: GoogleFonts.spaceGrotesk(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 14,
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -448,10 +544,21 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(0),
+                ),
               ),
-              child: Text('Try Again', style: GoogleFonts.spaceGrotesk(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: Text(
+                'Try Again',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 48),
             Container(
@@ -465,12 +572,19 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.offline_pin_outlined, color: colorScheme.onSurface.withValues(alpha: 0.5), size: 20),
+                      Icon(
+                        Icons.offline_pin_outlined,
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        size: 20,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Offline Access',
-                          style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.spaceGrotesk(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -478,7 +592,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'To access this page without internet, please download the "Arabic" and "${_settings.formatEditionName(_settings.defaultTranslation)}" editions via the Download button on the main page.',
-                    style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 13, height: 1.5),
+                    style: GoogleFonts.spaceGrotesk(
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
                   ),
                 ],
               ),
@@ -491,13 +609,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
   Widget _buildAyahItem(Ayah ayah) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outline),
-        ),
+        border: Border(bottom: BorderSide(color: colorScheme.outline)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -506,7 +622,10 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
                   border: Border.all(color: colorScheme.outline),
@@ -548,29 +667,34 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 ),
               )
             else
-               Container(
-                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                 decoration: BoxDecoration(
-                   color: colorScheme.error.withValues(alpha: 0.1),
-                   borderRadius: BorderRadius.circular(4),
-                   border: Border.all(color: colorScheme.error.withValues(alpha: 0.2))
-                 ),
-                 child: Row(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                     Icon(Icons.wifi_off, size: 14, color: colorScheme.error),
-                     const SizedBox(width: 8),
-                     Text(
-                       "Translation unavailable offline",
-                       style: GoogleFonts.spaceGrotesk(
-                         color: colorScheme.error,
-                         fontSize: 12,
-                         fontStyle: FontStyle.italic
-                       ),
-                     ),
-                   ],
-                 ),
-               )
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: colorScheme.error.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.wifi_off, size: 14, color: colorScheme.error),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Translation unavailable offline",
+                      style: GoogleFonts.spaceGrotesk(
+                        color: colorScheme.error,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ],
       ),

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +11,8 @@ class DownloadService extends ChangeNotifier {
   factory DownloadService() => _instance;
   DownloadService._internal();
 
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   final ApiService _api = ApiService();
 
   // State
@@ -22,37 +22,41 @@ class DownloadService extends ChangeNotifier {
   double progress = 0.0;
   String currentEdition = '';
   int currentSurah = 0;
-  
+
   bool _isInitialized = false;
 
   Future<void> init() async {
     if (_isInitialized) return;
 
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Load persisted data
     downloadedEditions = prefs.getStringList('downloaded_editions_list') ?? [];
     queue = prefs.getStringList('download_queue') ?? [];
     currentEdition = prefs.getString('current_download_edition') ?? '';
     currentSurah = prefs.getInt('last_downloaded_surah') ?? 0;
-    
-    debugPrint('DownloadService Init: Queue=${queue.length}, Downloaded=${downloadedEditions.length}');
-    debugPrint('Resume State: Edition=$currentEdition, LastSurah=$currentSurah');
+
+    debugPrint(
+      'DownloadService Init: Queue=${queue.length}, Downloaded=${downloadedEditions.length}',
+    );
+    debugPrint(
+      'Resume State: Edition=$currentEdition, LastSurah=$currentSurah',
+    );
 
     // Init Notifications
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/launcher_icon');
-    
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+
+    await flutterLocalNotificationsPlugin.initialize(
+      settings: initializationSettings,
     );
-    
-    await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
-    
+
     _isInitialized = true;
     notifyListeners();
   }
-
 
   Future<void> _saveDownloadedList() async {
     final prefs = await SharedPreferences.getInstance();
@@ -65,7 +69,6 @@ class DownloadService extends ChangeNotifier {
     await prefs.setStringList('download_queue', queue);
     debugPrint('Saved Queue: ${queue.length} items');
   }
-
 
   void addToQueue(String edition) {
     if (!queue.contains(edition) && !downloadedEditions.contains(edition)) {
@@ -92,19 +95,21 @@ class DownloadService extends ChangeNotifier {
     while (queue.isNotEmpty && status == DownloadStatus.downloading) {
       currentEdition = queue.first;
       int totalSurahs = 114;
-      
+
       // Resume Logic
       int startFrom = 1;
       final prefs = await SharedPreferences.getInstance();
       String? savedEdition = prefs.getString('current_download_edition');
       int? savedSurah = prefs.getInt('last_downloaded_surah');
 
-      if (savedEdition == currentEdition && savedSurah != null && savedSurah < 114) {
-         startFrom = savedSurah + 1;
+      if (savedEdition == currentEdition &&
+          savedSurah != null &&
+          savedSurah < 114) {
+        startFrom = savedSurah + 1;
       } else {
-         // New edition starting
-         await prefs.setString('current_download_edition', currentEdition);
-         await prefs.setInt('last_downloaded_surah', 0);
+        // New edition starting
+        await prefs.setString('current_download_edition', currentEdition);
+        await prefs.setInt('last_downloaded_surah', 0);
       }
 
       for (int i = startFrom; i <= totalSurahs; i++) {
@@ -128,7 +133,7 @@ class DownloadService extends ChangeNotifier {
         // Edition completed
         queue.removeAt(0);
         _saveQueue();
-        
+
         // Reset progress trackers
         await prefs.remove('current_download_edition');
         await prefs.remove('last_downloaded_surah');
@@ -160,7 +165,7 @@ class DownloadService extends ChangeNotifier {
     currentEdition = '';
     currentSurah = 0;
     queue.clear();
-    
+
     // Clear persistence
     _saveQueue();
     final prefs = await SharedPreferences.getInstance();
@@ -171,24 +176,31 @@ class DownloadService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _showProgressNotification(String edition, int current, int total) async {
-    final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'download_channel', 
-      'Downloads',
-      channelDescription: 'Show download progress',
-      importance: Importance.low,
-      priority: Priority.low,
-      showProgress: true,
-      maxProgress: total,
-      progress: current,
-      onlyAlertOnce: true,
+  Future<void> _showProgressNotification(
+    String edition,
+    int current,
+    int total,
+  ) async {
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'download_channel',
+          'Downloads',
+          channelDescription: 'Show download progress',
+          importance: Importance.low,
+          priority: Priority.low,
+          showProgress: true,
+          maxProgress: total,
+          progress: current,
+          onlyAlertOnce: true,
+        );
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
     );
-    final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
     await flutterLocalNotificationsPlugin.show(
-      id: 0, 
-      title: 'Downloading $edition', 
-      body: 'Surah $current of $total', 
-      notificationDetails: platformChannelSpecifics
+      id: 0,
+      title: 'Downloading $edition',
+      body: 'Surah $current of $total',
+      notificationDetails: platformChannelSpecifics,
     );
   }
 }

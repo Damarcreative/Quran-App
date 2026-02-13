@@ -8,25 +8,28 @@ class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
 
   @override
-  State<StorageManagementScreen> createState() => _StorageManagementScreenState();
+  State<StorageManagementScreen> createState() =>
+      _StorageManagementScreenState();
 }
 
-class _StorageManagementScreenState extends State<StorageManagementScreen> with SingleTickerProviderStateMixin {
+class _StorageManagementScreenState extends State<StorageManagementScreen>
+    with SingleTickerProviderStateMixin {
   final SettingsService _settings = SettingsService();
   final ApiService _api = ApiService();
   late TabController _tabController;
-  
+
   bool _isLoading = true;
   List<Map<String, dynamic>> _audioDetails = [];
   List<Map<String, dynamic>> _surahDetails = [];
   List<Map<String, dynamic>> _translationDetails = [];
   Map<int, Surah> _surahMap = {};
-  
+
   // Storage summary
   int _totalAudioSize = 0;
   int _totalDataSize = 0;
-  
-  bool _showSurahData = true; // Toggle between Surah vs Translation view in Data tab
+
+  bool _showSurahData =
+      true; // Toggle between Surah vs Translation view in Data tab
 
   @override
   void initState() {
@@ -34,7 +37,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
     _tabController = TabController(length: 2, vsync: this);
     _loadData();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -43,7 +46,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    
+
     // Fetch Surah metadata only if not already loaded
     if (_surahMap.isEmpty) {
       try {
@@ -53,17 +56,21 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
         debugPrint('Error loading surah map: $e');
       }
     }
-    
+
     final audio = await _settings.getAudioStorageDetails();
     final surah = await _settings.getSurahStorageDetails();
     final trans = await _settings.getTranslationStorageDetails();
-    
+
     int audioSize = 0;
-    for (var i in audio) audioSize += (i['totalSize'] as int);
-    
+    for (var i in audio) {
+      audioSize += (i['totalSize'] as int);
+    }
+
     int dataSize = 0;
-    for (var i in surah) dataSize += (i['totalSize'] as int);
-    
+    for (var i in surah) {
+      dataSize += (i['totalSize'] as int);
+    }
+
     if (mounted) {
       setState(() {
         _audioDetails = audio;
@@ -83,7 +90,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
 
   Future<void> _deleteSurahData(int surahNum) async {
     await _settings.deleteSurahCache(surahNum);
-    _loadData(); 
+    _loadData();
   }
 
   Future<void> _deleteTranslationData(String edition) async {
@@ -94,7 +101,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -122,142 +129,155 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
           ],
         ),
       ),
-      body: _isLoading 
-        ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
-        : TabBarView(
-            controller: _tabController,
-            children: [
-              _buildAudioTab(),
-              _buildDataTab(),
-            ],
-          ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+          : TabBarView(
+              controller: _tabController,
+              children: [_buildAudioTab(), _buildDataTab()],
+            ),
     );
   }
 
   Widget _buildAudioTab() {
-     final colorScheme = Theme.of(context).colorScheme;
-     
-     if (_audioDetails.isEmpty) {
-       return _buildEmptyState('No audio files downloaded');
-     }
-     
-     return Column(
-       crossAxisAlignment: CrossAxisAlignment.start,
-       children: [
-          _buildSummaryCard('Total Audio Storage', _settings.formatBytes(_totalAudioSize)),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-              itemCount: _audioDetails.length,
-              itemBuilder: (context, index) {
-                final item = _audioDetails[index];
-                final surahNum = item['surahNumber'];
-                final surah = _surahMap[surahNum];
-                
-                final surahName = surah != null ? surah.name : 'Surah $surahNum';
-                final totalAyahs = surah?.totalAyahs ?? 0;
-                final downloadCount = item['fileCount']; 
-                
-                return _buildStorageItem(
-                  title: surahName,
-                  subtitle: '$downloadCount / $totalAyahs Ayahs Downloaded',
-                  size: _settings.formatBytes(item['totalSize']),
-                  onDelete: () => _confirmDelete(
-                    title: 'Delete Audio?', 
-                    content: 'Delete audio files for $surahName?',
-                    onConfirm: () => _deleteAudio(surahNum),
-                  ),
-                );
-              },
-            ),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (_audioDetails.isEmpty) {
+      return _buildEmptyState('No audio files downloaded');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSummaryCard(
+          'Total Audio Storage',
+          _settings.formatBytes(_totalAudioSize),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+            itemCount: _audioDetails.length,
+            itemBuilder: (context, index) {
+              final item = _audioDetails[index];
+              final surahNum = item['surahNumber'];
+              final surah = _surahMap[surahNum];
+
+              final surahName = surah != null ? surah.name : 'Surah $surahNum';
+              final totalAyahs = surah?.totalAyahs ?? 0;
+              final downloadCount = item['fileCount'];
+
+              return _buildStorageItem(
+                title: surahName,
+                subtitle: '$downloadCount / $totalAyahs Ayahs Downloaded',
+                size: _settings.formatBytes(item['totalSize']),
+                onDelete: () => _confirmDelete(
+                  title: 'Delete Audio?',
+                  content: 'Delete audio files for $surahName?',
+                  onConfirm: () => _deleteAudio(surahNum),
+                ),
+              );
+            },
           ),
-       ],
-     );
+        ),
+      ],
+    );
   }
 
   Widget _buildDataTab() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSummaryCard('Total Cached Data', _settings.formatBytes(_totalDataSize)),
-        
+        _buildSummaryCard(
+          'Total Cached Data',
+          _settings.formatBytes(_totalDataSize),
+        ),
+
         // Toggle
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Row(
             children: [
-              _buildFilterChip('By Surah', _showSurahData, () => setState(() => _showSurahData = true)),
+              _buildFilterChip(
+                'By Surah',
+                _showSurahData,
+                () => setState(() => _showSurahData = true),
+              ),
               const SizedBox(width: 8),
-              _buildFilterChip('By Translation', !_showSurahData, () => setState(() => _showSurahData = false)),
+              _buildFilterChip(
+                'By Translation',
+                !_showSurahData,
+                () => setState(() => _showSurahData = false),
+              ),
             ],
           ),
         ),
-        
+
         Expanded(
           child: _showSurahData ? _buildSurahList() : _buildTranslationList(),
         ),
       ],
     );
   }
-  
+
   Widget _buildSurahList() {
     final colorScheme = Theme.of(context).colorScheme;
     if (_surahDetails.isEmpty) return _buildEmptyState('No cached surahs');
-    
+
     return ListView.builder(
-       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-       itemCount: _surahDetails.length,
-       itemBuilder: (context, index) {
-         final item = _surahDetails[index];
-         final surahNum = item['surahNumber'];
-         final surah = _surahMap[surahNum];
-         
-         final surahName = surah != null ? surah.name : 'Surah $surahNum';
-         final totalAyahs = surah?.totalAyahs ?? 0;
-         
-         // Since we cache full surahs, it's safe to say "X / X Ayahs"
-         // or just "X Ayahs Downloaded"
-         final subtitle = '$totalAyahs / $totalAyahs Ayahs Downloaded';
-         
-         return _buildStorageItem(
-           title: surahName,
-           subtitle: subtitle,
-           size: _settings.formatBytes(item['totalSize']),
-           onDelete: () => _confirmDelete(
-             title: 'Delete Cache?', 
-             content: 'Delete cached data for $surahName? You will need to re-download it to read offline.',
-             onConfirm: () => _deleteSurahData(surahNum),
-           ),
-         );
-       },
-     );
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      itemCount: _surahDetails.length,
+      itemBuilder: (context, index) {
+        final item = _surahDetails[index];
+        final surahNum = item['surahNumber'];
+        final surah = _surahMap[surahNum];
+
+        final surahName = surah != null ? surah.name : 'Surah $surahNum';
+        final totalAyahs = surah?.totalAyahs ?? 0;
+
+        // Since we cache full surahs, it's safe to say "X / X Ayahs"
+        // or just "X Ayahs Downloaded"
+        final subtitle = '$totalAyahs / $totalAyahs Ayahs Downloaded';
+
+        return _buildStorageItem(
+          title: surahName,
+          subtitle: subtitle,
+          size: _settings.formatBytes(item['totalSize']),
+          onDelete: () => _confirmDelete(
+            title: 'Delete Cache?',
+            content:
+                'Delete cached data for $surahName? You will need to re-download it to read offline.',
+            onConfirm: () => _deleteSurahData(surahNum),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildTranslationList() {
     final colorScheme = Theme.of(context).colorScheme;
-    if (_translationDetails.isEmpty) return _buildEmptyState('No cached translations');
+    if (_translationDetails.isEmpty)
+      return _buildEmptyState('No cached translations');
 
     return ListView.builder(
-       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-       itemCount: _translationDetails.length,
-       itemBuilder: (context, index) {
-         final item = _translationDetails[index];
-         return _buildStorageItem(
-           title: item['name'],
-           subtitle: '${item['surahCount']} Surahs cached',
-           size: _settings.formatBytes(item['totalSize']),
-           onDelete: () => _confirmDelete(
-             title: 'Delete Translation?', 
-             content: 'Delete all cached data for ${item['name']} edition?',
-             onConfirm: () => _deleteTranslationData(item['edition']),
-           ),
-         );
-       },
-     );
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      itemCount: _translationDetails.length,
+      itemBuilder: (context, index) {
+        final item = _translationDetails[index];
+        return _buildStorageItem(
+          title: item['name'],
+          subtitle: '${item['surahCount']} Surahs cached',
+          size: _settings.formatBytes(item['totalSize']),
+          onDelete: () => _confirmDelete(
+            title: 'Delete Translation?',
+            content: 'Delete all cached data for ${item['name']} edition?',
+            onConfirm: () => _deleteTranslationData(item['edition']),
+          ),
+        );
+      },
+    );
   }
-  
+
   Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
@@ -266,7 +286,9 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+          color: isSelected
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -289,7 +311,11 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
         children: [
           Row(
             children: [
-              Icon(Icons.pie_chart_outline, size: 16, color: colorScheme.primary),
+              Icon(
+                Icons.pie_chart_outline,
+                size: 16,
+                color: colorScheme.primary,
+              ),
               const SizedBox(width: 8),
               Text(
                 title.toUpperCase(),
@@ -308,7 +334,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
             style: GoogleFonts.spaceGrotesk(
               fontSize: 40,
               fontWeight: FontWeight.bold,
-              letterSpacing: -1.0, 
+              letterSpacing: -1.0,
               color: colorScheme.onSurface,
             ),
           ),
@@ -318,23 +344,27 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
   }
 
   Widget _buildEmptyState(String message) {
-     final colorScheme = Theme.of(context).colorScheme;
-     return Center(
-       child: Column(
-         mainAxisAlignment: MainAxisAlignment.center,
-         children: [
-           Icon(Icons.inventory_2_outlined, size: 64, color: colorScheme.outline),
-           const SizedBox(height: 16),
-           Text(
-             message,
-             style: GoogleFonts.spaceGrotesk(
-               color: colorScheme.onSurface.withValues(alpha: 0.5),
-               fontSize: 16,
-             ),
-           ),
-         ],
-       ),
-     );
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 64,
+            color: colorScheme.outline,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: GoogleFonts.spaceGrotesk(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildStorageItem({
@@ -350,12 +380,18 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
         title: Text(
-          title, 
-          style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          title,
+          style: GoogleFonts.spaceGrotesk(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         subtitle: Text(
-          subtitle, 
-          style: GoogleFonts.spaceGrotesk(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+          subtitle,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 12,
+            color: colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -380,19 +416,40 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
     );
   }
 
-  void _confirmDelete({required String title, required String content, required VoidCallback onConfirm}) {
+  void _confirmDelete({
+    required String title,
+    required String content,
+    required VoidCallback onConfirm,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: colorScheme.outline)),
-        title: Text(title, style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-        content: Text(content, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colorScheme.outline),
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.spaceGrotesk(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        content: Text(
+          content,
+          style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.6))),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.spaceGrotesk(
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -400,7 +457,10 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> with 
               onConfirm();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Delete', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.spaceGrotesk(color: Colors.white),
+            ),
           ),
         ],
       ),

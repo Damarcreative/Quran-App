@@ -16,7 +16,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final SettingsService _settings = SettingsService();
   final AudioService _audioService = AudioService();
-  
+
   Map<String, dynamic> _storageInfo = {};
   bool _isLoadingStorage = true;
   bool _isClearing = false;
@@ -95,27 +95,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: RichText(
-           text: TextSpan(
-             children: [
-               TextSpan(
-                 text: 'SETTINGS',
-                 style: GoogleFonts.spaceGrotesk(
-                   fontWeight: FontWeight.bold,
-                   fontSize: 24,
-                   color: colorScheme.onSurface,
-                   letterSpacing: -1,
-                 ),
-               ),
-               TextSpan(
-                 text: '.',
-                 style: GoogleFonts.spaceGrotesk(
-                   fontWeight: FontWeight.bold,
-                   fontSize: 24,
-                   color: colorScheme.primary,
-                 ),
-               ),
-             ],
-           ),
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'SETTINGS',
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -1,
+                ),
+              ),
+              TextSpan(
+                text: '.',
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
         ),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
@@ -128,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           // Section: General
           _buildSectionHeader('General'),
-          
+
           Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
@@ -161,7 +161,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   subtitle: Text(
                     'Use ١٢٣ instead of 123',
-                    style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12),
+                    style: GoogleFonts.spaceGrotesk(
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
                   ),
                   secondary: Container(
                     padding: const EdgeInsets.all(8),
@@ -169,20 +172,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       color: colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(Icons.numbers, color: colorScheme.primary, size: 20),
+                    child: Icon(
+                      Icons.numbers,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
                   ),
                   value: _settings.useArabicNumerals,
                   onChanged: (bool value) {
                     _settings.setUseArabicNumerals(value);
                   },
-                  activeColor: colorScheme.primary,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  activeThumbColor: colorScheme.primary,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 32),
 
           // Section: Storage
@@ -199,21 +211,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildStorageTile(
                   title: 'Clear Cache',
                   subtitle: 'Frees up space by removing temporary files',
-                  value: '${_settings.formatBytes(_storageInfo['cacheSize'] ?? 0)}',
+                  value: _settings.formatBytes(_storageInfo['cacheSize'] ?? 0),
                   icon: Icons.cleaning_services_outlined,
                   onTap: () => _showClearCacheDialog(context),
                   isLoading: _isLoadingStorage,
                 ),
-                  _buildStorageTile(
+                _buildStorageTile(
                   title: 'Manage Storage',
-                  subtitle: '${_settings.formatBytes(_storageInfo['totalSize'] ?? 0)} used',
+                  subtitle:
+                      '${_settings.formatBytes(_storageInfo['totalSize'] ?? 0)} used',
                   value: '',
                   icon: Icons.storage,
                   onTap: () {
                     Navigator.push(
-                      context, 
-                      MaterialPageRoute(builder: (context) => const StorageManagementScreen())
-                    ).then((_) => _loadStorageInfo()); // Reload info when returning
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const StorageManagementScreen(),
+                      ),
+                    ).then(
+                      (_) => _loadStorageInfo(),
+                    ); // Reload info when returning
                   },
                   isLoading: _isLoadingStorage,
                 ),
@@ -221,65 +238,64 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-           const SizedBox(height: 32),
+          const SizedBox(height: 32),
 
-           // About Section
-           _buildSectionHeader('About'),
-           
-           Container(
+          // About Section
+          _buildSectionHeader('About'),
+
+          Container(
             decoration: BoxDecoration(
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.zero,
               border: Border.all(color: colorScheme.outline),
             ),
             child: _buildSettingsTile(
-                  title: 'About Developer',
-                  subtitle: 'v$_appVersion',
-                  icon: Icons.info_outline,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AboutScreen()),
-                    );
-                  },
+              title: 'About Developer',
+              subtitle: 'v$_appVersion',
+              icon: Icons.info_outline,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AboutScreen()),
+                );
+              },
             ),
-           ),
-           
-           const SizedBox(height: 48),
-           
-           Center(
-             child: Column(
-               children: [
-                 Text(
-                   'Built with ❤️ for the Ummah',
-                   style: GoogleFonts.spaceGrotesk(
-                     color: colorScheme.onSurface.withValues(alpha: 0.5),
-                     fontSize: 12,
-                   ),
-                 ),
-                 const SizedBox(height: 4),
-                 Text(
-                   'Read. Reflect. Act.',
-                   style: GoogleFonts.spaceGrotesk(
-                     color: colorScheme.onSurface.withValues(alpha: 0.5),
-                     fontSize: 12,
-                     fontWeight: FontWeight.bold,
-                   ),
-                 ),
-                 const SizedBox(height: 4),
-                 Text(
-                   '© ${DateTime.now().year} DamarCreative. Open Source.',
-                   style: GoogleFonts.spaceGrotesk(
-                     color: colorScheme.onSurface.withValues(alpha: 0.5),
-                     fontSize: 10,
-                   ),
-                 ),
-               ],
-             ),
-           ),
-           
-           if (_audioService.currentSurah != null)
-             const SizedBox(height: 80),
+          ),
+
+          const SizedBox(height: 48),
+
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  'Built with ❤️ for the Ummah',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Read. Reflect. Act.',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '© ${DateTime.now().year} DamarCreative. Open Source.',
+                  style: GoogleFonts.spaceGrotesk(
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (_audioService.currentSurah != null) const SizedBox(height: 80),
         ],
       ),
     );
@@ -321,15 +337,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       title: Text(
         title,
-        style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.w500),
+        style: GoogleFonts.spaceGrotesk(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       subtitle: subtitle != null
-          ? Text(subtitle, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12))
+          ? Text(
+              subtitle,
+              style: GoogleFonts.spaceGrotesk(
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
+            )
           : null,
-      trailing: trailing ?? Icon(Icons.chevron_right, color: colorScheme.onSurface.withValues(alpha: 0.5)),
+      trailing:
+          trailing ??
+          Icon(
+            Icons.chevron_right,
+            color: colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
     );
   }
-  
+
   Widget _buildStorageTile({
     required String title,
     required String subtitle,
@@ -342,7 +372,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       onTap: onTap,
-       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -354,15 +384,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-            Text(title, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.w500)),
-            if (isLoading)
-               SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary))
-            else
-               Text(value, style: GoogleFonts.spaceGrotesk(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: GoogleFonts.spaceGrotesk(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (isLoading)
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
+              ),
+            )
+          else
+            Text(
+              value,
+              style: GoogleFonts.spaceGrotesk(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
         ],
       ),
-      subtitle: Text(subtitle, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12)),
-      trailing: showArrow ? Icon(Icons.chevron_right, color: colorScheme.onSurface.withValues(alpha: 0.5)) : null,
+      subtitle: Text(
+        subtitle,
+        style: GoogleFonts.spaceGrotesk(
+          color: colorScheme.onSurface.withValues(alpha: 0.5),
+          fontSize: 12,
+        ),
+      ),
+      trailing: showArrow
+          ? Icon(
+              Icons.chevron_right,
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            )
+          : null,
     );
   }
 
@@ -373,8 +433,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final colorScheme = Theme.of(context).colorScheme;
         return AlertDialog(
           backgroundColor: Theme.of(context).cardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: colorScheme.outline)),
-          title: Text('Select Theme', style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: colorScheme.outline),
+          ),
+          title: Text(
+            'Select Theme',
+            style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -387,31 +453,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
     );
   }
-  
+
   Widget _buildThemeOption(BuildContext context, String title, ThemeMode mode) {
-     final colorScheme = Theme.of(context).colorScheme;
-     
-     return RadioListTile<ThemeMode>(
-        title: Text(title, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface)),
-        value: mode, 
-        groupValue: _settings.themeMode, 
-        onChanged: (val) {
-           if (val != null) {
-              _settings.setThemeMode(val);
-              Navigator.pop(context);
-           }
-        },
-        activeColor: colorScheme.primary,
-     );
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return RadioListTile<ThemeMode>(
+      title: Text(
+        title,
+        style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface),
+      ),
+      value: mode,
+      groupValue: _settings.themeMode,
+      onChanged: (val) {
+        if (val != null) {
+          _settings.setThemeMode(val);
+          Navigator.pop(context);
+        }
+      },
+      activeColor: colorScheme.primary,
+    );
   }
 
   void _showTranslationDialog(BuildContext context) {
     final translations = _settings.getAvailableTranslations();
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent, // Transparent to show rounded corners of child
+      backgroundColor:
+          Colors.transparent, // Transparent to show rounded corners of child
       builder: (context) {
         final colorScheme = Theme.of(context).colorScheme;
         return DraggableScrollableSheet(
@@ -420,69 +490,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
           maxChildSize: 0.9,
           builder: (context, scrollController) {
             return Container(
-               decoration: BoxDecoration(
-                 color: Theme.of(context).cardColor,
-                 borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-               ),
-               padding: const EdgeInsets.symmetric(vertical: 24),
-               child: Column(
-                 crossAxisAlignment: CrossAxisAlignment.start,
-                 children: [
-                   // Handle
-                   Center(
-                     child: Container(
-                       width: 40,
-                       height: 4,
-                       margin: const EdgeInsets.only(bottom: 24),
-                       decoration: BoxDecoration(
-                         color: colorScheme.outline,
-                         borderRadius: BorderRadius.circular(2),
-                       ),
-                     ),
-                   ),
-                   // Title
-                   Padding(
-                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                     child: Text(
-                       'Select Translation',
-                       style: GoogleFonts.spaceGrotesk(
-                         fontSize: 20,
-                         fontWeight: FontWeight.bold,
-                         color: colorScheme.onSurface,
-                       ),
-                     ),
-                   ),
-                   const SizedBox(height: 16),
-                   // List
-                   Expanded(
-                     child: ListView.separated(
-                       controller: scrollController,
-                       itemCount: translations.length,
-                       separatorBuilder: (context, index) => Divider(height: 1, color: colorScheme.outline.withValues(alpha: 0.5)),
-                       itemBuilder: (context, index) {
-                         final t = translations[index];
-                         return RadioListTile<String>(
-                           value: t['code']!,
-                           groupValue: _settings.defaultTranslation,
-                           onChanged: (value) {
-                             if (value != null) {
-                               _settings.setDefaultTranslation(value);
-                               Navigator.pop(context);
-                             }
-                           },
-                           title: Text(t['name']!, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface)),
-                           activeColor: colorScheme.primary,
-                           contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                         );
-                       },
-                     ),
-                   ),
-                 ],
-               ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: colorScheme.outline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  // Title
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Select Translation',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // List
+                  Expanded(
+                    child: ListView.separated(
+                      controller: scrollController,
+                      itemCount: translations.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        color: colorScheme.outline.withValues(alpha: 0.5),
+                      ),
+                      itemBuilder: (context, index) {
+                        final t = translations[index];
+                        return RadioListTile<String>(
+                          value: t['code']!,
+                          groupValue: _settings.defaultTranslation,
+                          onChanged: (value) {
+                            if (value != null) {
+                              _settings.setDefaultTranslation(value);
+                              Navigator.pop(context);
+                            }
+                          },
+                          title: Text(
+                            t['name']!,
+                            style: GoogleFonts.spaceGrotesk(
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          activeColor: colorScheme.primary,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             );
-          }
+          },
         );
-      } 
+      },
     );
   }
 
@@ -492,22 +574,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).cardColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: colorScheme.outline)),
-        title: Text('Clear All Cache?', 
-          style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: colorScheme.outline),
+        ),
+        title: Text(
+          'Clear All Cache?',
+          style: GoogleFonts.spaceGrotesk(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           'This will delete all downloaded data including Quran text, translations, prayer times, and audio files. You will need to re-download them.',
-          style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.7)),
+          style: GoogleFonts.spaceGrotesk(
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel', style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5))),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.spaceGrotesk(
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
-            child: Text('Clear All', style: GoogleFonts.spaceGrotesk(color: Colors.white)),
+            child: Text(
+              'Clear All',
+              style: GoogleFonts.spaceGrotesk(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -519,19 +619,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await _settings.clearAllCache();
       await _loadStorageInfo();
       setState(() => _isClearing = false);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Cache cleared successfully', style: GoogleFonts.spaceGrotesk()),
+            content: Text(
+              'Cache cleared successfully',
+              style: GoogleFonts.spaceGrotesk(),
+            ),
             backgroundColor: colorScheme.primary,
           ),
         );
       }
     }
   }
-
-
-
-
 }

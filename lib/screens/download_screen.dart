@@ -24,14 +24,16 @@ class _DownloadScreenState extends State<DownloadScreen> {
     super.initState();
     _service.addListener(_onServiceUpdate);
     _settings.addListener(_onServiceUpdate);
-    
+
     Permission.notification.request();
     _loadEditions();
   }
 
   Future<void> _loadEditions() async {
-     try {
-      final String jsonString = await DefaultAssetBundle.of(context).loadString('assets/editions.json');
+    try {
+      final String jsonString = await DefaultAssetBundle.of(
+        context,
+      ).loadString('assets/editions.json');
       final Map<String, dynamic> jsonMap = json.decode(jsonString);
       setState(() {
         availableEditions = List<String>.from(jsonMap['editions']);
@@ -39,7 +41,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
     } catch (e) {
       debugPrint('Error loading editions: $e');
       setState(() {
-         availableEditions = ['id-indonesian', 'en-sahih', 'ar-jalalayn'];
+        availableEditions = ['id-indonesian', 'en-sahih', 'ar-jalalayn'];
       });
     }
   }
@@ -58,7 +60,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -79,7 +81,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
@@ -111,24 +113,29 @@ class _DownloadScreenState extends State<DownloadScreen> {
                 ),
                 if (_service.status != DownloadStatus.idle)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withValues(alpha: 0.2),
                       border: Border.all(color: colorScheme.primary),
                     ),
                     child: Text(
-                      _service.status == DownloadStatus.paused ? 'PAUSED' : 'DOWNLOADING',
+                      _service.status == DownloadStatus.paused
+                          ? 'PAUSED'
+                          : 'DOWNLOADING',
                       style: GoogleFonts.spaceGrotesk(
-                        color: colorScheme.primary, 
-                        fontSize: 10, 
-                        fontWeight: FontWeight.bold
+                        color: colorScheme.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
               ],
             ),
           ),
-          
+
           // Body
           Expanded(
             child: SingleChildScrollView(
@@ -137,171 +144,252 @@ class _DownloadScreenState extends State<DownloadScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-            Text(
-              'Download terjemahan dan tafsir untuk dibaca offline.',
-              style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 14),
-            ),
-            const SizedBox(height: 24),
+                  Text(
+                    'Download translations and tafsir for offline reading.',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-            // Add Edition Dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: colorScheme.outline),
-                borderRadius: BorderRadius.circular(0),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedEditionToAdd,
-                  hint: Text('Select edition to add', style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5))),
-                  dropdownColor: Theme.of(context).cardColor,
-                  isExpanded: true,
-                  items: availableEditions
-                      .where((e) => !_service.queue.contains(e) && !_service.downloadedEditions.contains(e))
-                      .map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface)),
-                    );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    if (newValue != null) {
-                      setState(() {
-                        _service.addToQueue(newValue);
-                        selectedEditionToAdd = null; 
-                      });
-                    }
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Controls & Progress
-            if (_service.status != DownloadStatus.idle || _service.queue.isNotEmpty) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _service.status == DownloadStatus.downloading 
-                          ? _service.pauseDownload 
-                          : _service.startDownload,
-                      icon: Icon(
-                        _service.status == DownloadStatus.downloading ? Icons.pause : Icons.play_arrow, 
-                        color: Colors.black,
-                      ),
-                      label: Text(
-                        _service.status == DownloadStatus.downloading ? 'Pause' : 'Resume', 
-                        style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, color: Colors.black)
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
+                  // Add Edition Dropdown
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: colorScheme.outline),
+                      borderRadius: BorderRadius.circular(0),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedEditionToAdd,
+                        hint: Text(
+                          'Select edition to add',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        dropdownColor: Theme.of(context).cardColor,
+                        isExpanded: true,
+                        items: availableEditions
+                            .where(
+                              (e) =>
+                                  !_service.queue.contains(e) &&
+                                  !_service.downloadedEditions.contains(e),
+                            )
+                            .map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(
+                                  value,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              );
+                            })
+                            .toList(),
+                        onChanged: (newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _service.addToQueue(newValue);
+                              selectedEditionToAdd = null;
+                            });
+                          }
+                        },
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  if (_service.status != DownloadStatus.idle)
-                    IconButton(
-                      onPressed: _service.stopDownload,
-                      icon: const Icon(Icons.stop, color: Colors.redAccent),
-                      style: IconButton.styleFrom(
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                        side: BorderSide(color: colorScheme.outline),
+                  const SizedBox(height: 24),
+
+                  // Controls & Progress
+                  if (_service.status != DownloadStatus.idle ||
+                      _service.queue.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                _service.status == DownloadStatus.downloading
+                                ? _service.pauseDownload
+                                : _service.startDownload,
+                            icon: Icon(
+                              _service.status == DownloadStatus.downloading
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              color: Colors.black,
+                            ),
+                            label: Text(
+                              _service.status == DownloadStatus.downloading
+                                  ? 'Pause'
+                                  : 'Resume',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(0),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        if (_service.status != DownloadStatus.idle)
+                          IconButton(
+                            onPressed: _service.stopDownload,
+                            icon: const Icon(
+                              Icons.stop,
+                              color: Colors.redAccent,
+                            ),
+                            style: IconButton.styleFrom(
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              side: BorderSide(color: colorScheme.outline),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (_service.status != DownloadStatus.idle) ...[
+                      const SizedBox(height: 12),
+                      LinearProgressIndicator(
+                        value: _service.progress,
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Downloading ${_service.currentEdition}: Surah ${_settings.formatNumber(_service.currentSurah)} of ${_settings.formatNumber(114)}',
+                        style: GoogleFonts.spaceGrotesk(
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (_service.queue.isNotEmpty) ...[
+                    Text(
+                      'Queue:',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _service.queue.length,
+                      itemBuilder: (context, index) {
+                        final edition = _service.queue[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: colorScheme.outline),
+                            borderRadius: BorderRadius.circular(0),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                edition,
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: colorScheme.onSurface,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.close,
+                                  size: 18,
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () =>
+                                    _service.removeFromQueue(edition),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (_service.downloadedEditions.isNotEmpty) ...[
+                    Container(height: 1, color: colorScheme.outline),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Downloaded:',
+                      style: GoogleFonts.spaceGrotesk(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      child: Scrollbar(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: _service.downloadedEditions.length,
+                          itemBuilder: (context, index) {
+                            final edition = _service.downloadedEditions[index];
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                border: Border.all(color: colorScheme.outline),
+                                borderRadius: BorderRadius.circular(0),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    edition,
+                                    style: GoogleFonts.spaceGrotesk(
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    color: Color(0xFF40B779),
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
-              if (_service.status != DownloadStatus.idle) ...[
-                const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: _service.progress,
-                  backgroundColor: colorScheme.surfaceContainerHighest,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Downloading ${_service.currentEdition}: Surah ${_settings.formatNumber(_service.currentSurah)} of ${_settings.formatNumber(114)}',
-                  style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12),
-                ),
-              ],
-              const SizedBox(height: 24),
-            ],
-
-            if (_service.queue.isNotEmpty) ...[
-               Text('Queue:', style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
-               const SizedBox(height: 12),
-               ListView.builder(
-                 shrinkWrap: true,
-                 physics: const NeverScrollableScrollPhysics(),
-                 itemCount: _service.queue.length,
-                 itemBuilder: (context, index) {
-                   final edition = _service.queue[index];
-                   return Container(
-                     margin: const EdgeInsets.only(bottom: 8),
-                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                     width: double.infinity,
-                     decoration: BoxDecoration(
-                       border: Border.all(color: colorScheme.outline),
-                       borderRadius: BorderRadius.circular(0),
-                     ),
-                     child: Row(
-                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                       children: [
-                         Text(edition, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontSize: 14)),
-                         IconButton(
-                           icon: Icon(Icons.close, size: 18, color: colorScheme.onSurface.withValues(alpha: 0.5)),
-                           padding: EdgeInsets.zero,
-                           constraints: const BoxConstraints(),
-                           onPressed: () => _service.removeFromQueue(edition),
-                         ),
-                       ],
-                     ),
-                   );
-                 },
-               ),
-
-               const SizedBox(height: 24),
-            ],
-            
-            if (_service.downloadedEditions.isNotEmpty) ...[
-               Container(height: 1, color: colorScheme.outline),
-               const SizedBox(height: 24),
-               Text('Downloaded:', style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
-               const SizedBox(height: 12),
-               ConstrainedBox(
-                 constraints: const BoxConstraints(maxHeight: 200),
-                 child: Scrollbar(
-                   child: ListView.builder(
-                     shrinkWrap: true,
-                     itemCount: _service.downloadedEditions.length,
-                     itemBuilder: (context, index) {
-                       final edition = _service.downloadedEditions[index];
-                       return Container(
-                         margin: const EdgeInsets.only(bottom: 8),
-                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                         width: double.infinity,
-                         decoration: BoxDecoration(
-                           color: Theme.of(context).cardColor,
-                           border: Border.all(color: colorScheme.outline),
-                           borderRadius: BorderRadius.circular(0),
-                         ),
-                         child: Row(
-                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                           children: [
-                             Text(edition, style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 14)),
-                             const Icon(Icons.check_circle_outline, color: Color(0xFF40B779), size: 18),
-                           ],
-                         ),
-                       );
-                     },
-                   ),
-                 ),
-               ),
-            ],
-          ],
-        ),
             ),
           ),
         ],

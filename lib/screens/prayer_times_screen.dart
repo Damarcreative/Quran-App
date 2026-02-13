@@ -42,7 +42,9 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
   Future<void> _loadLocationData() async {
     try {
-      final String jsonString = await DefaultAssetBundle.of(context).loadString('assets/loc_indonesian.json');
+      final String jsonString = await DefaultAssetBundle.of(
+        context,
+      ).loadString('assets/loc_indonesian.json');
       setState(() {
         _locations = json.decode(jsonString);
       });
@@ -63,31 +65,37 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
     if (savedProvince != null && savedCity != null) {
       // Validate
-      final provinceData = _locations.firstWhere((e) => e['provinsi'] == savedProvince, orElse: () => null);
+      final provinceData = _locations.firstWhere(
+        (e) => e['provinsi'] == savedProvince,
+        orElse: () => null,
+      );
       if (provinceData != null) {
         setState(() {
           _selectedProvince = savedProvince;
           _cities = List<String>.from(provinceData['kota_kabupaten']);
           if (_cities.contains(savedCity)) {
             _selectedCity = savedCity;
-             _fetchPrayerTimes(); // Fetch if valid
-             return;
+            _fetchPrayerTimes(); // Fetch if valid
+            return;
           }
         });
       }
     }
-    
+
     // Default to Jakarta if no saved location
-    final jakartaData = _locations.firstWhere((e) => e['provinsi'] == 'DKI Jakarta', orElse: () => null);
+    final jakartaData = _locations.firstWhere(
+      (e) => e['provinsi'] == 'DKI Jakarta',
+      orElse: () => null,
+    );
     if (jakartaData != null) {
-       setState(() {
-         _selectedProvince = 'DKI Jakarta';
-         _cities = List<String>.from(jakartaData['kota_kabupaten']);
-         _selectedCity = 'Kota Jakarta';
-       });
-       _fetchPrayerTimes();
+      setState(() {
+        _selectedProvince = 'DKI Jakarta';
+        _cities = List<String>.from(jakartaData['kota_kabupaten']);
+        _selectedCity = 'Kota Jakarta';
+      });
+      _fetchPrayerTimes();
     } else {
-       setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
@@ -98,10 +106,13 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
     // Ensure cities list is populated if starting with defaults
     if (_cities.isEmpty && _locations.isNotEmpty) {
-       final provinceData = _locations.firstWhere((e) => e['provinsi'] == tempProvince, orElse: () => null);
-       if (provinceData != null) {
-          _cities = List<String>.from(provinceData['kota_kabupaten']);
-       }
+      final provinceData = _locations.firstWhere(
+        (e) => e['provinsi'] == tempProvince,
+        orElse: () => null,
+      );
+      if (provinceData != null) {
+        _cities = List<String>.from(provinceData['kota_kabupaten']);
+      }
     }
 
     await showDialog(
@@ -110,13 +121,19 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-             return AlertDialog(
+            return AlertDialog(
               backgroundColor: const Color(0xFF111111),
               shape: RoundedRectangleBorder(
-                  side: const BorderSide(color: Color(0xFF2A2A2A)),
-                  borderRadius: BorderRadius.circular(0)
+                side: const BorderSide(color: Color(0xFF2A2A2A)),
+                borderRadius: BorderRadius.circular(0),
               ),
-              title: Text('Select Location', style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold)),
+              title: Text(
+                'Select Location',
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -130,24 +147,45 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: tempProvince,
-                        hint: Text('Province', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF555555), fontSize: 14)),
+                        hint: Text(
+                          'Province',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: const Color(0xFF555555),
+                            fontSize: 14,
+                          ),
+                        ),
                         dropdownColor: const Color(0xFF0A0A0A),
                         isExpanded: true,
-                        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF40B779)),
-                        items: _locations.map<DropdownMenuItem<String>>((dynamic item) {
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: Color(0xFF40B779),
+                        ),
+                        items: _locations.map<DropdownMenuItem<String>>((
+                          dynamic item,
+                        ) {
                           return DropdownMenuItem<String>(
                             value: item['provinsi'],
-                            child: Text(item['provinsi'], style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14)),
+                            child: Text(
+                              item['provinsi'],
+                              style: GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
-                           if (val == null) return;
-                           final provinceData = _locations.firstWhere((e) => e['provinsi'] == val);
-                           setStateDialog(() {
-                             tempProvince = val;
-                             _cities = List<String>.from(provinceData['kota_kabupaten']);
-                             tempCity = null;
-                           });
+                          if (val == null) return;
+                          final provinceData = _locations.firstWhere(
+                            (e) => e['provinsi'] == val,
+                          );
+                          setStateDialog(() {
+                            tempProvince = val;
+                            _cities = List<String>.from(
+                              provinceData['kota_kabupaten'],
+                            );
+                            tempCity = null;
+                          });
                         },
                       ),
                     ),
@@ -163,14 +201,31 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: tempCity,
-                        hint: Text('City', style: GoogleFonts.spaceGrotesk(color: const Color(0xFF555555), fontSize: 14)),
+                        hint: Text(
+                          'City',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: const Color(0xFF555555),
+                            fontSize: 14,
+                          ),
+                        ),
                         dropdownColor: const Color(0xFF0A0A0A),
                         isExpanded: true,
-                        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF40B779)),
-                        items: _cities.map<DropdownMenuItem<String>>((String value) {
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: Color(0xFF40B779),
+                        ),
+                        items: _cities.map<DropdownMenuItem<String>>((
+                          String value,
+                        ) {
                           return DropdownMenuItem<String>(
                             value: value,
-                            child: Text(value, style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14)),
+                            child: Text(
+                              value,
+                              style: GoogleFonts.spaceGrotesk(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
@@ -186,23 +241,36 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('CANCEL', style: GoogleFonts.spaceGrotesk(color: Colors.grey, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    'CANCEL',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 TextButton(
-                  onPressed: (tempProvince != null && tempCity != null) ? () {
-                    setState(() {
-                      _selectedProvince = tempProvince;
-                      _selectedCity = tempCity;
-                    });
-                    Navigator.of(context).pop();
-                    _saveLocation();
-                    _fetchPrayerTimes();
-                  } : null,
-                  child: Text('SAVE', style: GoogleFonts.spaceGrotesk(
-                    color: (tempProvince != null && tempCity != null) ? const Color(0xFF40B779) : Colors.grey, 
-                    fontWeight: FontWeight.bold
-                  )),
-                )
+                  onPressed: (tempProvince != null && tempCity != null)
+                      ? () {
+                          setState(() {
+                            _selectedProvince = tempProvince;
+                            _selectedCity = tempCity;
+                          });
+                          Navigator.of(context).pop();
+                          _saveLocation();
+                          _fetchPrayerTimes();
+                        }
+                      : null,
+                  child: Text(
+                    'SAVE',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: (tempProvince != null && tempCity != null)
+                          ? const Color(0xFF40B779)
+                          : Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ],
             );
           },
@@ -228,10 +296,14 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     });
 
     try {
-      final schedule = await ApiService().fetchPrayerSchedule(_selectedProvince!, _selectedCity!, date: _selectedDate);
-      
+      final schedule = await ApiService().fetchPrayerSchedule(
+        _selectedProvince!,
+        _selectedCity!,
+        date: _selectedDate,
+      );
+
       final String dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-      
+
       final todayData = schedule.firstWhere(
         (element) => element['tanggal_lengkap'] == dateStr,
         orElse: () => {},
@@ -258,7 +330,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       });
     }
   }
-  
+
   @override
   void dispose() {
     _settings.removeListener(_onSettingsChanged);
@@ -276,7 +348,9 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
 
   void _onProvinceChanged(String? newValue) {
     if (newValue == null) return;
-    final provinceData = _locations.firstWhere((e) => e['provinsi'] == newValue);
+    final provinceData = _locations.firstWhere(
+      (e) => e['provinsi'] == newValue,
+    );
     setState(() {
       _selectedProvince = newValue;
       _cities = List<String>.from(provinceData['kota_kabupaten']);
@@ -297,40 +371,42 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   @override
   Widget build(BuildContext context) {
     if (_errorMessage != null) {
-       return _buildErrorOverlay();
+      return _buildErrorOverlay();
     }
-    
+
     final colorScheme = Theme.of(context).colorScheme;
-    
-    final dateFormatted = _settings.formatString(DateFormat('d').format(_selectedDate));
+
+    final dateFormatted = _settings.formatString(
+      DateFormat('d').format(_selectedDate),
+    );
     final monthYear = DateFormat('MMMM yyyy').format(_selectedDate);
     final monthYearFormatted = _settings.formatString(monthYear);
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: RichText(
-           text: TextSpan(
-             children: [
-               TextSpan(
-                 text: 'TIME',
-                 style: GoogleFonts.spaceGrotesk(
-                   fontWeight: FontWeight.bold,
-                   fontSize: 24,
-                   color: colorScheme.onSurface,
-                   letterSpacing: -1,
-                 ),
-               ),
-               TextSpan(
-                 text: '.',
-                 style: GoogleFonts.spaceGrotesk(
-                   fontWeight: FontWeight.bold,
-                   fontSize: 24,
-                   color: colorScheme.primary,
-                 ),
-               ),
-             ],
-           ),
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'TIME',
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -1,
+                ),
+              ),
+              TextSpan(
+                text: '.',
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
         ),
         centerTitle: false,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -338,163 +414,239 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: _isLoading 
-        ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
-        : (_todayPrayerTimes != null) 
-             ? SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                child: Column(
-                  children: [
-                    // --- HEADER CARD ---
-                      Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            DateFormat('EEEE').format(_selectedDate),
-                            style: GoogleFonts.spaceGrotesk(color: colorScheme.primary, fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                           Text(
-                            "$dateFormatted $monthYearFormatted",
-                            style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontSize: 32, fontWeight: FontWeight.bold, height: 1.1),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_outlined, color: colorScheme.onSurface.withValues(alpha: 0.5), size: 16),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  '${_selectedCity ?? ''}, ${_selectedProvince ?? ''}',
-                                  style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.7), fontSize: 14),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () async {
-                                    final DateTime? picked = await showDatePicker(
-                                      context: context,
-                                      initialDate: _selectedDate,
-                                      firstDate: DateTime(2020),
-                                      lastDate: DateTime(2030),
-                                      builder: (context, child) {
-                                        return Theme(
-                                          data: Theme.of(context).copyWith(
-                                            colorScheme: ColorScheme.dark(
-                                              primary: colorScheme.primary,
-                                              onPrimary: Colors.black,
-                                              surface: const Color(0xFF111111), // Keep dark for picker or use theme
-                                              onSurface: Colors.white,
-                                            ),
-                                            textButtonTheme: TextButtonThemeData(
-                                              style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
-                                            ),
-                                            dialogBackgroundColor: Theme.of(context).cardColor,
-                                          ),
-                                          child: child!,
-                                        );
-                                      },
-                                    );
-                                    if (picked != null && picked != _selectedDate) {
-                                      setState(() => _selectedDate = picked);
-                                      _fetchPrayerTimes();
-                                    }
-                                  },
-                                  icon: Icon(Icons.calendar_today, size: 16, color: colorScheme.onSurface),
-                                  label: Text("Date", style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface)),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: colorScheme.outline),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: _showLocationDialog,
-                                  icon: Icon(Icons.map, size: 16, color: colorScheme.onSurface),
-                                  label: Text("Location", style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface)),
-                                  style: OutlinedButton.styleFrom(
-                                    side: BorderSide(color: colorScheme.outline),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // --- SCHEDULE LIST TITLE ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: colorScheme.primary))
+          : (_todayPrayerTimes != null)
+          ? SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              child: Column(
+                children: [
+                  // --- HEADER CARD ---
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'TODAY\'S PRAYERS',
+                          DateFormat('EEEE').format(_selectedDate),
                           style: GoogleFonts.spaceGrotesk(
-                             fontSize: 12, 
-                             fontWeight: FontWeight.bold, 
-                             color: colorScheme.onSurface.withValues(alpha: 0.5),
-                             letterSpacing: 1.5
+                            color: colorScheme.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                             // Navigate to Imsakiyah Screen
-                             Navigator.push(context, MaterialPageRoute(builder: (context) => ImsakiyahScreen(
-                               province: _selectedProvince!,
-                               city: _selectedCity!,
-                               date: _selectedDate,
-                             )));
-                          },
-                          child: Text(
-                            'See Monthly',
-                            style: GoogleFonts.spaceGrotesk(color: colorScheme.primary, fontSize: 12, fontWeight: FontWeight.bold),
+                        Text(
+                          "$dateFormatted $monthYearFormatted",
+                          style: GoogleFonts.spaceGrotesk(
+                            color: colorScheme.onSurface,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            height: 1.1,
                           ),
-                        )
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${_selectedCity ?? ''}, ${_selectedProvince ?? ''}',
+                                style: GoogleFonts.spaceGrotesk(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                  fontSize: 14,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  final DateTime? picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: _selectedDate,
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2030),
+                                    builder: (context, child) {
+                                      return Theme(
+                                        data: Theme.of(context).copyWith(
+                                          colorScheme: ColorScheme.dark(
+                                            primary: colorScheme.primary,
+                                            onPrimary: Colors.black,
+                                            surface: const Color(
+                                              0xFF111111,
+                                            ), // Keep dark for picker or use theme
+                                            onSurface: Colors.white,
+                                          ),
+                                          textButtonTheme: TextButtonThemeData(
+                                            style: TextButton.styleFrom(
+                                              foregroundColor:
+                                                  colorScheme.primary,
+                                            ),
+                                          ),
+                                          dialogTheme: DialogThemeData(
+                                            backgroundColor: Theme.of(
+                                              context,
+                                            ).cardColor,
+                                          ),
+                                        ),
+                                        child: child!,
+                                      );
+                                    },
+                                  );
+                                  if (picked != null &&
+                                      picked != _selectedDate) {
+                                    setState(() => _selectedDate = picked);
+                                    _fetchPrayerTimes();
+                                  }
+                                },
+                                icon: Icon(
+                                  Icons.calendar_today,
+                                  size: 16,
+                                  color: colorScheme.onSurface,
+                                ),
+                                label: Text(
+                                  "Date",
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: colorScheme.outline),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(0),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _showLocationDialog,
+                                icon: Icon(
+                                  Icons.map,
+                                  size: 16,
+                                  color: colorScheme.onSurface,
+                                ),
+                                label: Text(
+                                  "Location",
+                                  style: GoogleFonts.spaceGrotesk(
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(color: colorScheme.outline),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(0),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    
-                    _buildScheduleList(),
-                    
-                    // Extra padding for MiniPlayer
-                    if (_audioService.currentSurah != null)
-                      const SizedBox(height: 80),
-                  ],
-                ),
-               )
-             : Center(
-                 child: Column(
-                   mainAxisAlignment: MainAxisAlignment.center,
-                   children: [
-                     Text("Set your location to view prayer times", style: TextStyle(color: colorScheme.onSurface)),
-                     const SizedBox(height: 16),
-                     ElevatedButton.icon(
-                       onPressed: _showLocationDialog,
-                       icon: const Icon(Icons.location_on, color: Colors.black),
-                       label: Text('Set Location', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, color: Colors.black)),
-                       style: ElevatedButton.styleFrom(
-                         backgroundColor: colorScheme.primary,
-                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                       ),
-                     )
-                   ],
-                 ),
-               ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // --- SCHEDULE LIST TITLE ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'TODAY\'S PRAYERS',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          // Navigate to Imsakiyah Screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ImsakiyahScreen(
+                                province: _selectedProvince!,
+                                city: _selectedCity!,
+                                date: _selectedDate,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'See Monthly',
+                          style: GoogleFonts.spaceGrotesk(
+                            color: colorScheme.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildScheduleList(),
+
+                  // Extra padding for MiniPlayer
+                  if (_audioService.currentSurah != null)
+                    const SizedBox(height: 80),
+                ],
+              ),
+            )
+          : Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Set your location to view prayer times",
+                    style: TextStyle(color: colorScheme.onSurface),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _showLocationDialog,
+                    icon: const Icon(Icons.location_on, color: Colors.black),
+                    label: Text(
+                      'Set Location',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -508,29 +660,51 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               const Icon(Icons.wifi_off_outlined, size: 48, color: Colors.redAccent),
-               const SizedBox(height: 16),
-               Text(
-                 'Connection Error',
-                 style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold, fontSize: 18),
-               ),
-               const SizedBox(height: 8),
-               Text(
-                 _errorMessage ?? 'Unknown Error',
-                 style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 14),
-                 textAlign: TextAlign.center,
-               ),
-               const SizedBox(height: 24),
-               ElevatedButton.icon(
-                 onPressed: _fetchPrayerTimes,
-                 icon: const Icon(Icons.refresh, color: Colors.black),
-                 label: Text('Retry', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, color: Colors.black)),
-                 style: ElevatedButton.styleFrom(
-                   backgroundColor: colorScheme.primary,
-                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
-                 ),
-               )
+              const Icon(
+                Icons.wifi_off_outlined,
+                size: 48,
+                color: Colors.redAccent,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Connection Error',
+                style: GoogleFonts.spaceGrotesk(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage ?? 'Unknown Error',
+                style: GoogleFonts.spaceGrotesk(
+                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _fetchPrayerTimes,
+                icon: const Icon(Icons.refresh, color: Colors.black),
+                label: Text(
+                  'Retry',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -543,12 +717,12 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildTimeRow('Imsak', _todayPrayerTimes!.imsak),
-        _buildTimeRow('Subuh', _todayPrayerTimes!.subuh),
-        _buildTimeRow('Dhuha', _todayPrayerTimes!.dhuha),
-        _buildTimeRow('Dzuhur', _todayPrayerTimes!.dzuhur),
-        _buildTimeRow('Ashar', _todayPrayerTimes!.ashar),
+        _buildTimeRow('Fajr', _todayPrayerTimes!.subuh),
+        _buildTimeRow('Duha', _todayPrayerTimes!.dhuha),
+        _buildTimeRow('Dhuhr', _todayPrayerTimes!.dzuhur),
+        _buildTimeRow('Asr', _todayPrayerTimes!.ashar),
         _buildTimeRow('Maghrib', _todayPrayerTimes!.maghrib),
-        _buildTimeRow('Isya', _todayPrayerTimes!.isya),
+        _buildTimeRow('Isha', _todayPrayerTimes!.isya),
       ],
     );
   }
@@ -556,13 +730,17 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   Widget _buildTimeRow(String label, String time, {bool isHighlight = false}) {
     final colorScheme = Theme.of(context).colorScheme;
     final formattedTime = _settings.formatString(time);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: isHighlight ? colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent,
-        border: Border.all(color: isHighlight ? colorScheme.primary : colorScheme.outline),
+        color: isHighlight
+            ? colorScheme.primary.withValues(alpha: 0.1)
+            : Colors.transparent,
+        border: Border.all(
+          color: isHighlight ? colorScheme.primary : colorScheme.outline,
+        ),
         borderRadius: BorderRadius.circular(0),
       ),
       child: Row(

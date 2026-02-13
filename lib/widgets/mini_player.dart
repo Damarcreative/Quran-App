@@ -40,7 +40,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
 
     final surah = _audioService.currentSurah!;
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
@@ -59,8 +59,8 @@ class _MiniPlayerState extends State<MiniPlayer> {
                       Text(
                         surah.name,
                         style: GoogleFonts.spaceGrotesk(
-                          color: colorScheme.onSurface, 
-                          fontWeight: FontWeight.bold
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -68,8 +68,8 @@ class _MiniPlayerState extends State<MiniPlayer> {
                       Text(
                         'Ayah ${_settings.formatNumber(_audioService.currentAyah)}',
                         style: GoogleFonts.spaceGrotesk(
-                          color: colorScheme.primary, 
-                          fontSize: 12
+                          color: colorScheme.primary,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -78,33 +78,45 @@ class _MiniPlayerState extends State<MiniPlayer> {
                 Row(
                   children: [
                     IconButton(
-                      icon: Icon(Icons.skip_previous, color: colorScheme.onSurface),
-                      onPressed: _audioService.hasPrevSurah() ? _audioService.playPrevSurah : null,
+                      icon: Icon(
+                        Icons.skip_previous,
+                        color: colorScheme.onSurface,
+                      ),
+                      onPressed: _audioService.hasPrevSurah()
+                          ? _audioService.playPrevSurah
+                          : null,
                     ),
                     IconButton(
                       icon: Icon(
-                        _audioService.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill, 
-                        size: 40, 
-                        color: colorScheme.primary
+                        _audioService.isPlaying
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_fill,
+                        size: 40,
+                        color: colorScheme.primary,
                       ),
                       onPressed: () {
-                         if (_audioService.isPlaying) _audioService.pause();
-                         else _audioService.resume();
+                        if (_audioService.isPlaying) {
+                          _audioService.pause();
+                        } else {
+                          _audioService.resume();
+                        }
                       },
                     ),
                     IconButton(
                       icon: Icon(Icons.skip_next, color: colorScheme.onSurface),
-                      onPressed: _audioService.hasNextSurah() ? _audioService.playNextSurah : null,
+                      onPressed: _audioService.hasNextSurah()
+                          ? _audioService.playNextSurah
+                          : null,
                     ),
                   ],
-                )
+                ),
               ],
             ),
             if (_audioService.isBuffering)
               LinearProgressIndicator(
-                color: colorScheme.primary, 
-                backgroundColor: colorScheme.surfaceContainerHighest, 
-                minHeight: 2
+                color: colorScheme.primary,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                minHeight: 2,
               ),
           ],
         ),
