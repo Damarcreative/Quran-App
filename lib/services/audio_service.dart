@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:synchronized/synchronized.dart';
 import '../models/surah.dart';
 import '../services/api_service.dart';
+import '../services/murotal_download_service.dart';
 
 enum RepeatMode { none, autoNext, repeatOne }
 
@@ -22,9 +23,11 @@ class AudioService extends ChangeNotifier {
   String? _localPath;
 
   final Map<String, Lock> _downloadLocks = {};
+  final Lock _playlistLock = Lock();
 
   Surah? _currentSurah;
   int _currentAyah = 1;
+  int _lastAddedAyah = 0;
   bool _isPlaying = false;
   bool _isBuffering = false;
 
@@ -34,9 +37,11 @@ class AudioService extends ChangeNotifier {
   final bool _isPlayingBismillah = false;
   bool _isCompletionHandled = false;
   bool _isChangingTrack = false;
-  int _loadingOperationId = 0; // Token for cancellation
+  int _loadingOperationId = 0;
   Timer? _debounceTimer;
   int? _pendingSurahTarget;
+
+  List<int> _customSurahSequence = [];
 
   ConcatenatingAudioSource? _playlist;
 
@@ -70,8 +75,30 @@ class AudioService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCustomSurahSequence(List<int> sequence) {
+    _customSurahSequence = sequence;
+    notifyListeners();
+  }
+
+  void clearCustomSurahSequence() {
+    _customSurahSequence = [];
+    notifyListeners();
+  }
+
   bool hasNextSurah() {
     if (_currentSurah == null) return false;
+
+    if (_customSurahSequence.isNotEmpty) {
+      final currentIndex = _customSurahSequence.indexOf(_currentSurah!.number);
+      if (currentIndex == -1) return false;
+
+      if (_surahOrder == SurahOrder.descending) {
+        return currentIndex > 0;
+      } else {
+        return currentIndex < _customSurahSequence.length - 1;
+      }
+    }
+
     if (_surahOrder == SurahOrder.descending) {
       return _currentSurah!.number > 1;
     } else {
@@ -81,6 +108,18 @@ class AudioService extends ChangeNotifier {
 
   bool hasPrevSurah() {
     if (_currentSurah == null) return false;
+
+    if (_customSurahSequence.isNotEmpty) {
+      final currentIndex = _customSurahSequence.indexOf(_currentSurah!.number);
+      if (currentIndex == -1) return false;
+
+      if (_surahOrder == SurahOrder.descending) {
+        return currentIndex < _customSurahSequence.length - 1;
+      } else {
+        return currentIndex > 0;
+      }
+    }
+
     if (_surahOrder == SurahOrder.descending) {
       return _currentSurah!.number < 114;
     } else {
@@ -94,9 +133,21 @@ class AudioService extends ChangeNotifier {
     final direction = _surahOrder == SurahOrder.ascending ? 1 : -1;
 
     int baseSurah = _pendingSurahTarget ?? _currentSurah!.number;
-    int nextNum = baseSurah + direction;
+    int nextNum = -1;
 
-    if (nextNum >= 1 && nextNum <= 114) {
+    if (_customSurahSequence.isNotEmpty) {
+      final currentIndex = _customSurahSequence.indexOf(baseSurah);
+      if (currentIndex != -1) {
+        final nextIndex = currentIndex + direction;
+        if (nextIndex >= 0 && nextIndex < _customSurahSequence.length) {
+          nextNum = _customSurahSequence[nextIndex];
+        }
+      }
+    } else {
+      nextNum = baseSurah + direction;
+    }
+
+    if (nextNum != -1 && nextNum >= 1 && nextNum <= 114) {
       _pendingSurahTarget = nextNum;
 
       _debounceTimer?.cancel();
@@ -119,10 +170,22 @@ class AudioService extends ChangeNotifier {
 
     // Base
     int baseSurah = _pendingSurahTarget ?? _currentSurah!.number;
-    int prevNum = baseSurah + direction;
+    int prevNum = -1;
+
+    if (_customSurahSequence.isNotEmpty) {
+      final currentIndex = _customSurahSequence.indexOf(baseSurah);
+      if (currentIndex != -1) {
+        final prevIndex = currentIndex + direction;
+        if (prevIndex >= 0 && prevIndex < _customSurahSequence.length) {
+          prevNum = _customSurahSequence[prevIndex];
+        }
+      }
+    } else {
+      prevNum = baseSurah + direction;
+    }
 
     // Clamp
-    if (prevNum >= 1 && prevNum <= 114) {
+    if (prevNum != -1 && prevNum >= 1 && prevNum <= 114) {
       _pendingSurahTarget = prevNum;
 
       _debounceTimer?.cancel();
@@ -155,7 +218,6 @@ class AudioService extends ChangeNotifier {
         final source = _playlist!.children[index] as UriAudioSource;
         if (source.tag != null && source.tag is int) {
           final newAyah = source.tag as int;
-          // Allow 0 (Bismillah) to trigger update
           if (newAyah >= 0 && _currentAyah != newAyah) {
             _currentAyah = newAyah;
             notifyListeners();
@@ -169,7 +231,6 @@ class AudioService extends ChangeNotifier {
       if (state.processingState == ProcessingState.completed) {
         if (!_isChangingTrack && !_isCompletionHandled) {
           _isCompletionHandled = true;
-          // Playlist finished implies end of Surah logic if not caught by queue
           _handleSurahCompletion();
         }
       } else if (state.processingState != ProcessingState.completed) {
@@ -179,7 +240,7 @@ class AudioService extends ChangeNotifier {
   }
 
   Future<void> playAyah(Surah surah, int ayahNumber) async {
-    final int opId = ++_loadingOperationId; // Start new operation
+    final int opId = ++_loadingOperationId;
 
     _currentSurah = surah;
     _currentAyah = ayahNumber;
@@ -195,11 +256,9 @@ class AudioService extends ChangeNotifier {
     try {
       final List<AudioSource> initialSources = [];
 
-      // 1. Handle Bismillah Logic - only for first ayah, not surah 1 or 9
       if (ayahNumber == 1 && surah.number != 1 && surah.number != 9) {
-        // Check if bismillah already cached, don't wait for download
         final bismillahPath = await _getFileWithLock(1, 1, onlyCheck: true);
-        if (opId != _loadingOperationId) return; // Cancelled
+        if (opId != _loadingOperationId) return;
 
         final uri = bismillahPath != null
             ? Uri.parse(bismillahPath)
@@ -207,13 +266,12 @@ class AudioService extends ChangeNotifier {
         initialSources.add(AudioSource.uri(uri, tag: 0));
       }
 
-      // 2. Add ONLY the target ayah first - quick check or use remote URL
       final targetPath = await _getFileWithLock(
         surah.number,
         ayahNumber,
         onlyCheck: true,
       );
-      if (opId != _loadingOperationId) return; // Cancelled
+      if (opId != _loadingOperationId) return;
 
       final targetUri = targetPath != null
           ? Uri.parse(targetPath)
@@ -222,11 +280,11 @@ class AudioService extends ChangeNotifier {
             );
       initialSources.add(AudioSource.uri(targetUri, tag: ayahNumber));
 
-      // 3. Create minimal playlist and PLAY IMMEDIATELY
       _playlist = ConcatenatingAudioSource(children: initialSources);
 
       try {
         await _player.setAudioSource(_playlist!);
+        _lastAddedAyah = ayahNumber;
       } catch (e) {
         if (e.toString().contains("Platform player") &&
             e.toString().contains("already exists")) {
@@ -234,6 +292,7 @@ class AudioService extends ChangeNotifier {
           await Future.delayed(const Duration(milliseconds: 100));
           if (opId != _loadingOperationId) return;
           await _player.setAudioSource(_playlist!);
+          _lastAddedAyah = ayahNumber;
         } else {
           rethrow;
         }
@@ -245,8 +304,7 @@ class AudioService extends ChangeNotifier {
       _player.play();
       notifyListeners();
 
-      // 4. BACKGROUND: Add buffer ayahs while playing
-      _bufferNextAyahsInBackground(surah, ayahNumber);
+      _bufferNextAyahsInBackground(surah, ayahNumber, opId);
     } catch (e) {
       if (opId == _loadingOperationId) {
         debugPrint("Error initializing playlist: $e");
@@ -256,26 +314,40 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  /// Buffer next ayahs in background without blocking playback
-  Future<void> _bufferNextAyahsInBackground(Surah surah, int startAyah) async {
-    // Small delay to let playback start smoothly
+  Future<void> _bufferNextAyahsInBackground(
+    Surah surah,
+    int startAyah,
+    int opId,
+  ) async {
     await Future.delayed(const Duration(milliseconds: 100));
 
-    // Add next 3 ayahs to playlist in background
-    for (int i = 1; i <= 3; i++) {
-      final target = startAyah + i;
-      if (target <= surah.totalAyahs && _playlist != null) {
-        try {
-          final source = await _resolveAudioSource(surah, target);
-          await _playlist!.add(source);
-        } catch (e) {
-          debugPrint("Buffer error for ayah $target: $e");
+    if (opId != _loadingOperationId) return;
+
+    await _playlistLock.synchronized(() async {
+      if (opId != _loadingOperationId) return;
+
+      for (int i = 1; i <= 3; i++) {
+        final target = startAyah + i;
+
+        if (target <= _lastAddedAyah) continue;
+
+        if (target <= surah.totalAyahs && _playlist != null) {
+          try {
+            final source = await _resolveAudioSource(surah, target);
+            if (_playlist != null && opId == _loadingOperationId) {
+              await _playlist!.add(source);
+              _lastAddedAyah = target;
+            }
+          } catch (e) {
+            debugPrint("Buffer error for ayah $target: $e");
+          }
         }
       }
-    }
+    });
 
-    // Also prefetch more ayahs for cache
-    _prefetch(surah, startAyah);
+    if (opId == _loadingOperationId) {
+      _prefetch(surah, startAyah);
+    }
   }
 
   bool _isAddingToPlaylist = false;
@@ -287,34 +359,59 @@ class AudioService extends ChangeNotifier {
     _isAddingToPlaylist = true;
 
     try {
-      final index = _player.currentIndex ?? 0;
-      final length = _playlist!.length;
+      await _playlistLock.synchronized(() async {
+        await _sanitizePlaylist();
 
-      // Check if we are approaching end of current playlist
-      if (length - index <= 2) {
-        final lastSource = _playlist!.children.last as UriAudioSource;
-        final lastAyahNum = lastSource.tag as int;
+        final index = _player.currentIndex ?? 0;
+        final length = _playlist!.length;
+        if (length - index <= 2) {
+          final lastSource = _playlist!.children.last as UriAudioSource;
+          final lastAyahNum = lastSource.tag as int;
 
-        // Next ayah in current Surah?
-        int nextAyahNum = (lastAyahNum == 0) ? 1 : lastAyahNum + 1;
+          int nextAyahNum = (lastAyahNum == 0) ? 1 : lastAyahNum + 1;
 
-        if (nextAyahNum <= _currentSurah!.totalAyahs) {
-          // Continue adding current surah ayahs
-          final source = await _resolveAudioSource(_currentSurah!, nextAyahNum);
-          await _playlist!.add(source);
-        } else {
-          // We are at the end of the surah.
-          // PREFETCH NEXT SURAH DATA for seamless transition
-          // We don't add to playlist yet (keep logic simple), but we ensure cache is hot.
-          if (!_isPrefetchingNext) {
-            _prefetchNextSurahInfo();
+          if (nextAyahNum <= _currentSurah!.totalAyahs) {
+            if (nextAyahNum > _lastAddedAyah) {
+              final source = await _resolveAudioSource(
+                _currentSurah!,
+                nextAyahNum,
+              );
+              if (_playlist != null) {
+                await _playlist!.add(source);
+                _lastAddedAyah = nextAyahNum;
+              }
+            }
+          } else {
+            if (!_isPrefetchingNext) {
+              _prefetchNextSurahInfo();
+            }
           }
         }
-      }
 
-      _prefetch(_currentSurah!, _currentAyah);
+        _prefetch(_currentSurah!, _currentAyah);
+      });
     } finally {
       _isAddingToPlaylist = false;
+    }
+  }
+
+  Future<void> _sanitizePlaylist() async {
+    if (_playlist == null || _playlist!.length < 2) return;
+
+    try {
+      for (int i = _playlist!.length - 1; i > 0; i--) {
+        final current = _playlist!.children[i] as UriAudioSource;
+        final prev = _playlist!.children[i - 1] as UriAudioSource;
+
+        if (current.tag == prev.tag) {
+          debugPrint(
+            "SANITIZER: Removed duplicate at index $i (Ayah ${current.tag})",
+          );
+          await _playlist!.removeAt(i);
+        }
+      }
+    } catch (e) {
+      debugPrint("Sanitizer warning: $e");
     }
   }
 
@@ -327,22 +424,15 @@ class AudioService extends ChangeNotifier {
       final nextSurahNum = _currentSurah!.number + 1;
       if (nextSurahNum <= 114) {
         debugPrint("Prefetching Next Surah: $nextSurahNum...");
-        // 1. Warm API Cache
         final api = ApiService();
         await api.fetchSurahDetails(nextSurahNum);
-
-        // 2. Prefetch Audio for Bismillah & First Ayah
-        // File 1:1 (Al-Fatihah 1) is Bismillah.
-        // But strict Bismillah audio is often shared.
-        // We'll just prefetch 1,1 (re-used often) and NextSurah,1.
-
-        await _getFileWithLock(1, 1); // Bismillah/Fatihah 1
+        await _getFileWithLock(1, 1);
         await _getFileWithLock(nextSurahNum, 1);
       }
     } catch (e) {
       debugPrint("Prefetch Warning: $e");
     } finally {
-      _isPrefetchingNext = false; // Allow retry if called again much later
+      _isPrefetchingNext = false;
     }
   }
 
@@ -354,17 +444,14 @@ class AudioService extends ChangeNotifier {
       debugPrint("Repeating Surah...");
       playAyah(_currentSurah!, 1);
     } else if (_repeatMode == RepeatMode.autoNext) {
-      // Next logic
       playNextSurah();
     } else {
-      // Stop
       _player.stop();
     }
   }
 
-  // Helper to load next surah - OPTIMIZED for speed
   Future<void> _loadAndPlaySurah(int number) async {
-    final int opId = ++_loadingOperationId; // Start new operation
+    final int opId = ++_loadingOperationId;
 
     try {
       final surahs = await ApiService().fetchSurahs();
@@ -381,12 +468,11 @@ class AudioService extends ChangeNotifier {
         ),
       );
 
-      // Update state IMMEDIATELY before loading audio
       _currentSurah = nextSurah;
       _currentAyah = 1;
+      _lastAddedAyah = 0;
       notifyListeners();
 
-      // Now play with bismillah-first strategy
       await _playWithBismillahFirst(nextSurah, opId);
     } catch (e) {
       if (opId == _loadingOperationId) {
@@ -398,25 +484,20 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  /// Play bismillah first (for surah 2-113), then add ayah 1 in background
   Future<void> _playWithBismillahFirst(Surah surah, int opId) async {
     _isChangingTrack = true;
     notifyListeners();
 
     try {
       await _player.stop();
-    } catch (e) {
-      // Ignore
-    }
+    } catch (e) {}
 
     if (opId != _loadingOperationId) return;
 
     try {
       final List<AudioSource> initialSources = [];
 
-      // For surah 2-113 (not 1 and not 9), play bismillah first
       if (surah.number != 1 && surah.number != 9) {
-        // Use cached or remote bismillah
         final bismillahPath = await _getFileWithLock(1, 1, onlyCheck: true);
         if (opId != _loadingOperationId) return;
 
@@ -440,11 +521,11 @@ class AudioService extends ChangeNotifier {
             );
       initialSources.add(AudioSource.uri(ayah1Uri, tag: 1));
 
-      // Create playlist and PLAY IMMEDIATELY
       _playlist = ConcatenatingAudioSource(children: initialSources);
 
       try {
         await _player.setAudioSource(_playlist!);
+        _lastAddedAyah = 1;
       } catch (e) {
         if (e.toString().contains("Platform player") &&
             e.toString().contains("already exists")) {
@@ -452,6 +533,7 @@ class AudioService extends ChangeNotifier {
           await Future.delayed(const Duration(milliseconds: 100));
           if (opId != _loadingOperationId) return;
           await _player.setAudioSource(_playlist!);
+          _lastAddedAyah = 1;
         } else {
           rethrow;
         }
@@ -463,8 +545,7 @@ class AudioService extends ChangeNotifier {
       _player.play();
       notifyListeners();
 
-      // Buffer next ayahs in background
-      _bufferNextAyahsInBackground(surah, 1);
+      _bufferNextAyahsInBackground(surah, 1, opId);
     } catch (e) {
       if (opId == _loadingOperationId) {
         debugPrint("Error playing surah: $e");
@@ -508,7 +589,6 @@ class AudioService extends ChangeNotifier {
   }
 
   Future<void> skipToNextSurah() async {
-    // Force skip to next surah regardless of current state
     if (_currentSurah != null) {
       await _player.stop();
       playNextSurah();
@@ -572,6 +652,8 @@ class AudioService extends ChangeNotifier {
         final length = await file.length();
         if (length <= 1024) {
           debugPrint("Downloaded file too small ($length bytes): $fileName");
+        } else {
+          MurotalDownloadService().checkSurahCompleteness(surahNum);
         }
 
         return file.uri.toString();

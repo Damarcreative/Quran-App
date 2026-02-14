@@ -17,8 +17,8 @@ class MurotalScreen extends StatefulWidget {
 class _MurotalScreenState extends State<MurotalScreen> {
   final AudioService _audioService = AudioService();
   final MurotalDownloadService _downloadService = MurotalDownloadService();
-  final SettingsService _settings = SettingsService(); 
-  
+  final SettingsService _settings = SettingsService();
+
   late Future<List<Surah>> _surahListFuture;
   List<Surah> _allSurahs = [];
   List<Surah> _filteredSurahs = [];
@@ -27,10 +27,11 @@ class _MurotalScreenState extends State<MurotalScreen> {
   @override
   void initState() {
     super.initState();
-    _settings.addListener(_onSettingsUpdate); 
+    _settings.addListener(_onSettingsUpdate);
     _audioService.addListener(_onAudioUpdate);
     _downloadService.addListener(_onDownloadUpdate);
     _downloadService.init();
+    _downloadService.scanDownloadedFiles();
     _surahListFuture = ApiService().fetchSurahs().then((surahs) {
       if (mounted) {
         setState(() {
@@ -65,21 +66,165 @@ class _MurotalScreenState extends State<MurotalScreen> {
 
   void _filterSurahs(String query) {
     setState(() {
-      if (query.isEmpty) {
-        _filteredSurahs = _allSurahs;
-      } else {
+      final normalizedQuery = query.trim().toLowerCase();
+
+      if (normalizedQuery == 'offline') {
+        // Offline Mode: Show only downloaded surahs
         _filteredSurahs = _allSurahs.where((surah) {
-          return surah.name.toLowerCase().contains(query.toLowerCase()) ||
-              surah.number.toString().contains(query);
+          return _downloadService.isSurahDownloaded(surah.number);
         }).toList();
+
+        // Set custom sequence for playback
+        final sequence = _filteredSurahs.map((s) => s.number).toList();
+        _audioService.setCustomSurahSequence(sequence);
+      } else {
+        // Normal Mode
+        _audioService.clearCustomSurahSequence();
+
+        if (query.isEmpty) {
+          _filteredSurahs = _allSurahs;
+        } else {
+          _filteredSurahs = _allSurahs.where((surah) {
+            return surah.name.toLowerCase().contains(normalizedQuery) ||
+                surah.number.toString().contains(query);
+          }).toList();
+        }
       }
     });
+  }
+
+  void _showHelpDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Murotal Guide',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.close,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: [
+                    _buildHelpSection(
+                      icon: Icons.cloud_download,
+                      title: 'Download & Offline',
+                      description:
+                          'Tap the download icon to download. Surahs with a checkmark (✓) are available offline.',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildHelpSection(
+                      icon: Icons.search,
+                      title: 'Offline Search Mode',
+                      description:
+                          'Type "offline" in the search bar to filter ONLY downloaded Surahs. The playlist will automatically cycle through this list only.',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildHelpSection(
+                      icon: Icons.playlist_play,
+                      title: 'Player Navigation',
+                      description:
+                          'The Next/Previous buttons follow the list currently displayed on the screen. If in "offline" search mode, only offline Surahs will be played sequentially.',
+                    ),
+                    const SizedBox(height: 64),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Got it',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpSection({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: colorScheme.primary, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.spaceGrotesk(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(description, style: GoogleFonts.spaceGrotesk(fontSize: 12)),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -113,6 +258,12 @@ class _MurotalScreenState extends State<MurotalScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: _showHelpDialog,
+            tooltip: 'Guide',
+            color: colorScheme.primary,
+          ),
+          IconButton(
             icon: Icon(Icons.download_outlined, color: colorScheme.primary),
             onPressed: () {
               showModalBottomSheet(
@@ -123,9 +274,8 @@ class _MurotalScreenState extends State<MurotalScreen> {
                   initialChildSize: 0.7,
                   minChildSize: 0.5,
                   maxChildSize: 0.9,
-                  builder: (context, scrollController) => MurotalDownloadScreen(
-                    scrollController: scrollController,
-                  ),
+                  builder: (context, scrollController) =>
+                      MurotalDownloadScreen(scrollController: scrollController),
                 ),
               );
             },
@@ -140,10 +290,15 @@ class _MurotalScreenState extends State<MurotalScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: _filterSurahs,
-              style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, height: 1.5),
+              style: GoogleFonts.spaceGrotesk(
+                color: colorScheme.onSurface,
+                height: 1.5,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search Surah to listen...',
-                hintStyle: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withOpacity(0.5)),
+                hintStyle: GoogleFonts.spaceGrotesk(
+                  color: colorScheme.onSurface.withOpacity(0.5),
+                ),
                 isDense: true,
                 filled: true,
                 fillColor: Colors.transparent,
@@ -154,7 +309,11 @@ class _MurotalScreenState extends State<MurotalScreen> {
                 focusedBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: colorScheme.primary, width: 2),
                 ),
-                suffixIcon: Icon(Icons.search, color: colorScheme.primary, size: 20),
+                suffixIcon: Icon(
+                  Icons.search,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -166,14 +325,31 @@ class _MurotalScreenState extends State<MurotalScreen> {
             child: FutureBuilder<List<Surah>>(
               future: _surahListFuture,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting && _allSurahs.isEmpty) {
-                  return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    _allSurahs.isEmpty) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: colorScheme.primary,
+                    ),
+                  );
                 } else if (_filteredSurahs.isEmpty) {
-                   return Center(child: Text("No Surahs found", style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7))));
+                  return Center(
+                    child: Text(
+                      "No Surahs found",
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 100), // Keep padding for global player
+                  padding: const EdgeInsets.fromLTRB(
+                    24,
+                    16,
+                    24,
+                    100,
+                  ), // Keep padding for global player
                   itemCount: _filteredSurahs.length,
                   itemBuilder: (context, index) {
                     return _buildSurahItem(_filteredSurahs[index]);
@@ -189,18 +365,23 @@ class _MurotalScreenState extends State<MurotalScreen> {
 
   Widget _buildSurahItem(Surah surah) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isPlayingThisSurah = _audioService.currentSurah?.number == surah.number;
+    final isPlayingThisSurah =
+        _audioService.currentSurah?.number == surah.number;
     final isDownloaded = _downloadService.isSurahDownloaded(surah.number);
-    
+
     // Format numerals
     final formattedNumber = _settings.formatNumber(surah.number);
     final formattedAyahCount = _settings.formatNumber(surah.totalAyahs);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        border: Border.all(color: isPlayingThisSurah ? colorScheme.primary : colorScheme.outline),
-        color: isPlayingThisSurah ? colorScheme.primary.withOpacity(0.05) : Colors.transparent,
+        border: Border.all(
+          color: isPlayingThisSurah ? colorScheme.primary : colorScheme.outline,
+        ),
+        color: isPlayingThisSurah
+            ? colorScheme.primary.withOpacity(0.05)
+            : Colors.transparent,
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -209,7 +390,9 @@ class _MurotalScreenState extends State<MurotalScreen> {
           height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isPlayingThisSurah ? colorScheme.primary : Theme.of(context).cardColor,
+            color: isPlayingThisSurah
+                ? colorScheme.primary
+                : Theme.of(context).cardColor,
             shape: BoxShape.circle,
             border: Border.all(color: colorScheme.outline),
           ),
@@ -224,23 +407,34 @@ class _MurotalScreenState extends State<MurotalScreen> {
         ),
         title: Row(
           children: [
-            Expanded(
+            Flexible(
               child: Text(
                 surah.name,
-                style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontWeight: FontWeight.bold),
+                style: GoogleFonts.spaceGrotesk(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (isDownloaded)
-               Icon(Icons.download_done, size: 16, color: colorScheme.primary),
+            if (isDownloaded) ...[
+              const SizedBox(width: 8),
+              Icon(Icons.check_circle, size: 16, color: colorScheme.primary),
+            ],
           ],
         ),
         subtitle: Text(
           '$formattedAyahCount Ayahs${isDownloaded ? ' • Offline' : ''}',
-          style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 12),
+          style: GoogleFonts.spaceGrotesk(
+            color: colorScheme.onSurface.withOpacity(0.5),
+            fontSize: 12,
+          ),
         ),
         trailing: IconButton(
           icon: Icon(
-            isPlayingThisSurah && _audioService.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill,
+            isPlayingThisSurah && _audioService.isPlaying
+                ? Icons.pause_circle_filled
+                : Icons.play_circle_fill,
             color: colorScheme.primary,
             size: 32,
           ),
@@ -264,7 +458,10 @@ class _MurotalScreenState extends State<MurotalScreen> {
             useRootNavigator: true,
             backgroundColor: Theme.of(context).cardColor,
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24))
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
+              ),
             ),
             builder: (context) => _buildAyahSelector(surah),
           );
@@ -279,42 +476,59 @@ class _MurotalScreenState extends State<MurotalScreen> {
       height: MediaQuery.of(context).size.height * 0.7,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-         color: Theme.of(context).scaffoldBackgroundColor,
-         borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24))
+        color: Theme.of(context).scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-             children: [
-               Text(
-                 'Select Ayah - ${surah.name}', 
-                 style: GoogleFonts.spaceGrotesk(color: colorScheme.onSurface, fontSize: 18, fontWeight: FontWeight.bold)
-               ),
-               IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close, color: colorScheme.onSurface.withOpacity(0.5)))
-             ],
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Select Ayah - ${surah.name}',
+                style: GoogleFonts.spaceGrotesk(
+                  color: colorScheme.onSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: Icon(
+                  Icons.close,
+                  color: colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                 crossAxisCount: 5,
-                 crossAxisSpacing: 12,
-                 mainAxisSpacing: 12,
+                crossAxisCount: 5,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
               ),
               itemCount: surah.totalAyahs,
               itemBuilder: (context, index) {
                 final ayahNum = index + 1;
-                final isCurrent = _audioService.currentSurah?.number == surah.number && _audioService.currentAyah == ayahNum;
+                final isCurrent =
+                    _audioService.currentSurah?.number == surah.number &&
+                    _audioService.currentAyah == ayahNum;
                 return InkWell(
                   onTap: () {
-                     _audioService.playAyah(surah, ayahNum);
-                     Navigator.pop(context);
+                    _audioService.playAyah(surah, ayahNum);
+                    Navigator.pop(context);
                   },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isCurrent ? colorScheme.primary : Theme.of(context).cardColor,
+                      color: isCurrent
+                          ? colorScheme.primary
+                          : Theme.of(context).cardColor,
                       border: Border.all(color: colorScheme.outline),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -322,17 +536,17 @@ class _MurotalScreenState extends State<MurotalScreen> {
                     child: Text(
                       _settings.formatNumber(ayahNum),
                       style: GoogleFonts.spaceGrotesk(
-                        color: isCurrent ? Colors.black : colorScheme.onSurface, 
-                        fontWeight: FontWeight.bold
+                        color: isCurrent ? Colors.black : colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 );
               },
             ),
-          )
+          ),
         ],
-      )
+      ),
     );
   }
 }

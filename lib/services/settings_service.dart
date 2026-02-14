@@ -36,18 +36,19 @@ class SettingsService extends ChangeNotifier {
   /// Initialize and load saved settings
   Future<void> init() async {
     if (_availableTranslations.length <= 2) {
-       await _loadEditions();
+      await _loadEditions();
     }
 
     if (_isInitialized) return;
 
     final prefs = await SharedPreferences.getInstance();
 
-    _defaultTranslation = prefs.getString(_keyDefaultTranslation) ?? 'id-indonesian';
-    
+    _defaultTranslation =
+        prefs.getString(_keyDefaultTranslation) ?? 'id-indonesian';
+
     final themeModeString = prefs.getString(_keyThemeMode) ?? 'dark';
     _themeMode = themeModeString == 'light' ? ThemeMode.light : ThemeMode.dark;
-    
+
     _useArabicNumerals = prefs.getBool(_keyUseArabicNumerals) ?? false;
 
     // Migration fix: English code changed from en-english to en-sahih
@@ -55,18 +56,20 @@ class SettingsService extends ChangeNotifier {
       _defaultTranslation = 'en-sahih';
       await prefs.setString(_keyDefaultTranslation, 'en-sahih');
     }
-    
+
     // Migration fix: ar-arabic is invalid, fallback to id-indonesian
     if (_defaultTranslation == 'ar-arabic') {
-       _defaultTranslation = 'id-indonesian';
-       await prefs.setString(_keyDefaultTranslation, 'id-indonesian');
-       await prefs.setString(_keyDefaultTranslation, 'id-indonesian');
+      _defaultTranslation = 'id-indonesian';
+      await prefs.setString(_keyDefaultTranslation, 'id-indonesian');
+      await prefs.setString(_keyDefaultTranslation, 'id-indonesian');
     }
 
     await _loadEditions();
 
     _isInitialized = true;
-    debugPrint('SettingsService initialized: translation=$_defaultTranslation, theme=$_themeMode, arabicNumerals=$_useArabicNumerals');
+    debugPrint(
+      'SettingsService initialized: translation=$_defaultTranslation, theme=$_themeMode, arabicNumerals=$_useArabicNumerals',
+    );
   }
 
   Future<void> _loadEditions() async {
@@ -74,76 +77,102 @@ class SettingsService extends ChangeNotifier {
       final jsonString = await rootBundle.loadString('assets/editions.json');
       final Map<String, dynamic> data = json.decode(jsonString);
       final List<dynamic> editionsRaw = data['editions'];
-      
+
       final Set<String> pinned = {'id-indonesian', 'en-sahih'};
       final List<Map<String, String>> others = [];
-      
+
       for (final edition in editionsRaw) {
         if (edition is String && !pinned.contains(edition)) {
-            // Filter out known tafsirs or non-translations
-            if (edition.contains('jalalayn') || 
-                edition.contains('muyassar') || 
-                edition.contains('muntakhab') ||
-                edition == 'arabic') {
-              continue;
-            }
-            
-            others.add({
-              'code': edition, 
-              'name': formatEditionName(edition)
-            });
+          // Filter out known tafsirs or non-translations
+          if (edition.contains('jalalayn') ||
+              edition.contains('muyassar') ||
+              edition.contains('muntakhab') ||
+              edition == 'arabic') {
+            continue;
+          }
+
+          others.add({'code': edition, 'name': formatEditionName(edition)});
         }
       }
-      
+
       // Sort others alphabetically by name
       others.sort((a, b) => a['name']!.compareTo(b['name']!));
-      
+
       _availableTranslations = [
         {'code': 'id-indonesian', 'name': 'Indonesia'},
         {'code': 'en-sahih', 'name': 'English'},
-        ...others
+        ...others,
       ];
-      
     } catch (e) {
       debugPrint('Error loading editions in SettingsService: $e');
     }
   }
 
   String formatEditionName(String editionId) {
-     final parts = editionId.split('-');
-     final langCode = parts[0];
-     
-     final langMap = {
-       'id': 'Indonesia', 'en': 'English', 'ar': 'Arabic', 'az': 'Azerbaijani',
-       'bg': 'Bulgarian', 'bn': 'Bengali', 'bs': 'Bosnian', 'cs': 'Czech',
-       'de': 'German', 'dv': 'Divehi', 'es': 'Spanish', 'fa': 'Persian',
-       'fr': 'French', 'ha': 'Hausa', 'hi': 'Hindi', 'it': 'Italian',
-       'ja': 'Japanese', 'ko': 'Korean', 'ku': 'Kurdish', 'ml': 'Malayalam',
-       'ms': 'Malay', 'nl': 'Dutch', 'no': 'Norwegian', 'pl': 'Polish',
-       'pt': 'Portuguese', 'ro': 'Romanian', 'ru': 'Russian', 'sd': 'Sindhi',
-       'so': 'Somali', 'sq': 'Albanian', 'sv': 'Swedish', 'sw': 'Swahili',
-       'ta': 'Tamil', 'tg': 'Tajik', 'th': 'Thai', 'tr': 'Turkish',
-       'tt': 'Tatar', 'ug': 'Uyghur', 'ur': 'Urdu', 'uz': 'Uzbek',
-       'zh': 'Chinese'
-     };
-     
-     String langName = langMap[langCode] ?? langCode.toUpperCase();
-     
-     if (parts.length > 1) {
-        String suffix = parts[1];
-        if (suffix.toLowerCase() == langName.toLowerCase()) {
-           return langName;
-        }
-        suffix = suffix[0].toUpperCase() + suffix.substring(1);
-        return "$langName ($suffix)";
-     }
-     return langName;
+    final parts = editionId.split('-');
+    final langCode = parts[0];
+
+    final langMap = {
+      'id': 'Indonesia',
+      'en': 'English',
+      'ar': 'Arabic',
+      'az': 'Azerbaijani',
+      'bg': 'Bulgarian',
+      'bn': 'Bengali',
+      'bs': 'Bosnian',
+      'cs': 'Czech',
+      'de': 'German',
+      'dv': 'Divehi',
+      'es': 'Spanish',
+      'fa': 'Persian',
+      'fr': 'French',
+      'ha': 'Hausa',
+      'hi': 'Hindi',
+      'it': 'Italian',
+      'ja': 'Japanese',
+      'ko': 'Korean',
+      'ku': 'Kurdish',
+      'ml': 'Malayalam',
+      'ms': 'Malay',
+      'nl': 'Dutch',
+      'no': 'Norwegian',
+      'pl': 'Polish',
+      'pt': 'Portuguese',
+      'ro': 'Romanian',
+      'ru': 'Russian',
+      'sd': 'Sindhi',
+      'so': 'Somali',
+      'sq': 'Albanian',
+      'sv': 'Swedish',
+      'sw': 'Swahili',
+      'ta': 'Tamil',
+      'tg': 'Tajik',
+      'th': 'Thai',
+      'tr': 'Turkish',
+      'tt': 'Tatar',
+      'ug': 'Uyghur',
+      'ur': 'Urdu',
+      'uz': 'Uzbek',
+      'zh': 'Chinese',
+    };
+
+    String langName = langMap[langCode] ?? langCode.toUpperCase();
+
+    if (parts.length > 1) {
+      String suffix = parts[1];
+      if (suffix.toLowerCase() == langName.toLowerCase()) {
+        return langName;
+      }
+      suffix = suffix[0].toUpperCase() + suffix.substring(1);
+      return "$langName ($suffix)";
+    }
+    return langName;
   }
 
   /// Set default translation language
   Future<void> setDefaultTranslation(String edition) async {
     if (_defaultTranslation == edition) return;
-    
+
     _defaultTranslation = edition;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyDefaultTranslation, edition);
@@ -153,17 +182,20 @@ class SettingsService extends ChangeNotifier {
   /// Set theme mode (dark/light)
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode == mode) return;
-    
+
     _themeMode = mode;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyThemeMode, mode == ThemeMode.light ? 'light' : 'dark');
+    await prefs.setString(
+      _keyThemeMode,
+      mode == ThemeMode.light ? 'light' : 'dark',
+    );
     notifyListeners();
   }
 
   /// Set whether to use Arabic numerals for ayah numbers
   Future<void> setUseArabicNumerals(bool value) async {
     if (_useArabicNumerals == value) return;
-    
+
     _useArabicNumerals = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyUseArabicNumerals, value);
@@ -174,9 +206,13 @@ class SettingsService extends ChangeNotifier {
   String formatNumber(int number) {
     if (!useArabicNumerals) return number.toString();
     const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-    return number.toString().split('').map((digit) {
-      return arabicDigits[int.parse(digit)];
-    }).join('');
+    return number
+        .toString()
+        .split('')
+        .map((digit) {
+          return arabicDigits[int.parse(digit)];
+        })
+        .join('');
   }
 
   String formatString(String input) {
@@ -191,10 +227,10 @@ class SettingsService extends ChangeNotifier {
   Future<Map<String, dynamic>> getStorageInfo() async {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys();
-    
+
     int cacheCount = 0;
     int totalSize = 0;
-    
+
     // Count cache entries
     for (final key in keys) {
       if (key.startsWith('cache_') || key.startsWith('prayer_times_')) {
@@ -205,7 +241,7 @@ class SettingsService extends ChangeNotifier {
         }
       }
     }
-    
+
     // Get audio files size
     int audioFilesSize = 0;
     int audioFilesCount = 0;
@@ -223,7 +259,7 @@ class SettingsService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error getting audio files size: $e');
     }
-    
+
     return {
       'cacheCount': cacheCount,
       'cacheSize': totalSize,
@@ -237,9 +273,9 @@ class SettingsService extends ChangeNotifier {
   Future<void> clearAllCache() async {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().toList();
-    
+
     for (final key in keys) {
-      if (key.startsWith('cache_') || 
+      if (key.startsWith('cache_') ||
           key.startsWith('prayer_times_') ||
           key.startsWith('downloaded_') ||
           key.startsWith('download_') ||
@@ -249,7 +285,7 @@ class SettingsService extends ChangeNotifier {
         await prefs.remove(key);
       }
     }
-    
+
     // Clear audio files
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -260,7 +296,7 @@ class SettingsService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error clearing audio files: $e');
     }
-    
+
     debugPrint('All cache cleared');
     notifyListeners();
   }
@@ -274,7 +310,8 @@ class SettingsService extends ChangeNotifier {
   String formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
@@ -286,10 +323,10 @@ class SettingsService extends ChangeNotifier {
       final audioDir = Directory('${dir.path}/audio');
       if (await audioDir.exists()) {
         final List<FileSystemEntity> files = await audioDir.list().toList();
-        
+
         // Group files by Surah
         final Map<int, List<File>> surahFiles = {};
-        
+
         for (final entity in files) {
           if (entity is File) {
             final filename = entity.uri.pathSegments.last;
@@ -332,9 +369,11 @@ class SettingsService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error getting audio storage details: $e');
     }
-    
+
     // Sort by Surah number
-    details.sort((a, b) => (a['surahNumber'] as int).compareTo(b['surahNumber'] as int));
+    details.sort(
+      (a, b) => (a['surahNumber'] as int).compareTo(b['surahNumber'] as int),
+    );
     return details;
   }
 
@@ -343,7 +382,7 @@ class SettingsService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys();
     final Map<int, int> surahSizes = {}; // SurahNum -> Size in bytes
-    final Map<int, bool> surahHasArabic = {}; 
+    final Map<int, bool> surahHasArabic = {};
 
     for (final key in keys) {
       if (key.startsWith('cache_surah_')) {
@@ -369,12 +408,14 @@ class SettingsService extends ChangeNotifier {
       details.add({
         'surahNumber': surahNum,
         'totalSize': size,
-        // We don't parse the JSON here to save performance. 
+        // We don't parse the JSON here to save performance.
         // The UI will map surahNumber to totalAyahs from surah_list.json
       });
     });
 
-    details.sort((a, b) => (a['surahNumber'] as int).compareTo(b['surahNumber'] as int));
+    details.sort(
+      (a, b) => (a['surahNumber'] as int).compareTo(b['surahNumber'] as int),
+    );
     return details;
   }
 
@@ -383,24 +424,26 @@ class SettingsService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys();
     final Map<String, int> translationSizes = {}; // EditionKey -> Size
-    final Map<String, int> translationCounts = {}; // EditionKey -> Count of Surahs
+    final Map<String, int> translationCounts =
+        {}; // EditionKey -> Count of Surahs
 
     for (final key in keys) {
       if (key.startsWith('cache_surah_') && !key.contains('_arabic_')) {
-         // key: cache_surah_1_id-indonesian_v4
-         // parts: [cache, surah, 1, id-indonesian, v4]
-         final parts = key.split('_');
-         if (parts.length >= 5) {
-            // Reconstruct edition if it contains underscores
-            // But for safety let's stick to index 3 as our editions are simple
-            String edition = parts[3]; 
-            
-            final value = prefs.getString(key);
-            if (value != null) {
-              translationSizes[edition] = (translationSizes[edition] ?? 0) + value.length;
-              translationCounts[edition] = (translationCounts[edition] ?? 0) + 1;
-            }
-         }
+        // key: cache_surah_1_id-indonesian_v4
+        // parts: [cache, surah, 1, id-indonesian, v4]
+        final parts = key.split('_');
+        if (parts.length >= 5) {
+          // Reconstruct edition if it contains underscores
+          // But for safety let's stick to index 3 as our editions are simple
+          String edition = parts[3];
+
+          final value = prefs.getString(key);
+          if (value != null) {
+            translationSizes[edition] =
+                (translationSizes[edition] ?? 0) + value.length;
+            translationCounts[edition] = (translationCounts[edition] ?? 0) + 1;
+          }
+        }
       }
     }
 
@@ -414,7 +457,9 @@ class SettingsService extends ChangeNotifier {
       });
     });
 
-    details.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    details.sort(
+      (a, b) => (a['name'] as String).compareTo(b['name'] as String),
+    );
     return details;
   }
 
@@ -426,12 +471,14 @@ class SettingsService extends ChangeNotifier {
       if (await audioDir.exists()) {
         final List<FileSystemEntity> files = await audioDir.list().toList();
         for (final entity in files) {
-           if (entity is File) {
-             final filename = entity.uri.pathSegments.last;
-             if (filename.startsWith('${surahNumber.toString().padLeft(3, '0')}-')) {
-               await entity.delete();
-             }
-           }
+          if (entity is File) {
+            final filename = entity.uri.pathSegments.last;
+            if (filename.startsWith(
+              '${surahNumber.toString().padLeft(3, '0')}-',
+            )) {
+              await entity.delete();
+            }
+          }
         }
       }
       notifyListeners();
@@ -443,8 +490,10 @@ class SettingsService extends ChangeNotifier {
   /// Delete all cache for a specific Surah
   Future<void> deleteSurahCache(int surahNumber) async {
     final prefs = await SharedPreferences.getInstance();
-    final keys = prefs.getKeys().toList(); // Copy list to avoid concurrent modification issues
-    
+    final keys = prefs
+        .getKeys()
+        .toList(); // Copy list to avoid concurrent modification issues
+
     for (final key in keys) {
       if (key.startsWith('cache_surah_${surahNumber}_')) {
         await prefs.remove(key);
@@ -457,14 +506,13 @@ class SettingsService extends ChangeNotifier {
   Future<void> deleteTranslationCache(String edition) async {
     final prefs = await SharedPreferences.getInstance();
     final keys = prefs.getKeys().toList();
-    
+
     for (final key in keys) {
       // key format: cache_surah_{num}_{edition}_v4
       if (key.contains('_$edition')) {
-         await prefs.remove(key);
+        await prefs.remove(key);
       }
     }
     notifyListeners();
   }
 }
-

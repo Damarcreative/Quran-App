@@ -11,11 +11,13 @@ import 'api_service.dart';
 enum MurotalDownloadStatus { idle, downloading, paused }
 
 class MurotalDownloadService extends ChangeNotifier {
-  static final MurotalDownloadService _instance = MurotalDownloadService._internal();
+  static final MurotalDownloadService _instance =
+      MurotalDownloadService._internal();
   factory MurotalDownloadService() => _instance;
   MurotalDownloadService._internal();
 
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   final ApiService _api = ApiService();
   final Dio _dio = Dio();
   String? _localPath;
@@ -28,7 +30,7 @@ class MurotalDownloadService extends ChangeNotifier {
   int currentSurah = 0;
   int currentAyah = 0;
   int totalAyahs = 0;
-  
+
   bool _isInitialized = false;
 
   Future<void> init() async {
@@ -40,48 +42,193 @@ class MurotalDownloadService extends ChangeNotifier {
     await Directory(_localPath!).create(recursive: true);
 
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Load persisted data
-    final downloadedList = prefs.getStringList('murotal_downloaded_surahs') ?? [];
+    final downloadedList =
+        prefs.getStringList('murotal_downloaded_surahs') ?? [];
     downloadedSurahs = downloadedList.map((e) => int.parse(e)).toList();
-    
+
     final queueList = prefs.getStringList('murotal_download_queue') ?? [];
     queue = queueList.map((e) => int.parse(e)).toList();
-    
+
     currentSurah = prefs.getInt('murotal_current_download_surah') ?? 0;
     currentAyah = prefs.getInt('murotal_last_downloaded_ayah') ?? 0;
-    
-    debugPrint('MurotalDownloadService Init: Queue=${queue.length}, Downloaded=${downloadedSurahs.length}');
+
+    debugPrint(
+      'MurotalDownloadService Init: Queue=${queue.length}, Downloaded=${downloadedSurahs.length}',
+    );
     debugPrint('Resume State: Surah=$currentSurah, LastAyah=$currentAyah');
 
     // Init Notifications
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/launcher_icon');
-    
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
+
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+
+    await flutterLocalNotificationsPlugin.initialize(
+      settings: initializationSettings,
     );
-    
-    await flutterLocalNotificationsPlugin.initialize(settings: initializationSettings);
-    
+
     _isInitialized = true;
     notifyListeners();
+    // Scan for existing files in background to update status
+    scanDownloadedFiles();
+  }
+
+  /// Scans the local directory for compiled surahs
+  Future<void> scanDownloadedFiles() async {
+    if (_localPath == null) {
+      final dir = await getApplicationDocumentsDirectory();
+      _localPath = '${dir.path}/audio';
+    }
+
+    final dir = Directory(_localPath!);
+    if (!await dir.exists()) return;
+
+    try {
+      final List<FileSystemEntity> files = dir.listSync();
+      final Map<int, int> surahAyahCounts = {};
+
+      for (final file in files) {
+        if (file is File) {
+          final filename = file.uri.pathSegments.last;
+          if (filename.endsWith('.mp3') && filename.contains('-')) {
+            try {
+              final parts = filename.replaceAll('.mp3', '').split('-');
+              if (parts.length == 2) {
+                final surahNum = int.parse(parts[0]);
+                surahAyahCounts[surahNum] =
+                    (surahAyahCounts[surahNum] ?? 0) + 1;
+              }
+            } catch (e) {
+              // Ignore malformed filenames
+            }
+          }
+        }
+      }
+
+      // We need total ayahs for each surah to confirm completeness
+      // If we don't have them cached in memory elsewhere, we might need to fetch or hardcode.
+      // However, ApiService().fetchSurahs() caches in memory usually.
+      List<Surah> surahs = [];
+      try {
+        surahs = await _api.fetchSurahs();
+      } catch (e) {
+        debugPrint('Error fetching surahs for scan: $e');
+        return;
+      }
+
+      bool changed = false;
+      for (final surah in surahs) {
+        final localCount = surahAyahCounts[surah.number] ?? 0;
+        // Check if we have all ayahs
+        // Note: Some surahs count Bismillah as ayah 1, some don't in file naming.
+        // Our naming convention is SSS-AAA.mp3.
+        // Usually file count should equal totalAyahs.
+        // EXCEPT for Surah 1 and 9 logic might differ in AudioService but let's assume standard 1..N
+
+        if (localCount >= surah.totalAyahs) {
+          if (!downloadedSurahs.contains(surah.number)) {
+            downloadedSurahs.add(surah.number);
+            changed = true;
+          }
+        }
+      }
+
+      if (changed) {
+        await _saveDownloadedList();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error scanning downloaded files: $e');
+    }
+  }
+
+  /// Checks if a specific Surah is fully downloaded (e.g. after streaming)
+  Future<void> checkSurahCompleteness(int surahNumber) async {
+    // If already marked, skip
+    if (downloadedSurahs.contains(surahNumber)) return;
+
+    if (_localPath == null) {
+      final dir = await getApplicationDocumentsDirectory();
+      _localPath = '${dir.path}/audio';
+    }
+
+    final dir = Directory(_localPath!);
+    if (!await dir.exists()) return;
+
+    try {
+      // Get total ayahs for this Surah
+      // We try to fetch from API cache first
+      int totalAyahs = 0;
+      try {
+        final surahs = await _api.fetchSurahs();
+        final surah = surahs.firstWhere(
+          (s) => s.number == surahNumber,
+          orElse: () => Surah(
+            number: surahNumber,
+            name: '',
+            nameAr: '',
+            type: '',
+            totalAyahs: 0,
+          ),
+        );
+        totalAyahs = surah.totalAyahs;
+      } catch (e) {
+        debugPrint('Error fetching surah info for check: $e');
+        return;
+      }
+
+      if (totalAyahs == 0) return;
+
+      // Optimize: Check specific files instead of listing all
+      // We assume standard naming: SSS-AAA.mp3
+      bool allAyahsExist = true;
+      for (int i = 1; i <= totalAyahs; i++) {
+        final filename =
+            '${surahNumber.toString().padLeft(3, '0')}-${i.toString().padLeft(3, '0')}.mp3';
+        final file = File('${_localPath}/$filename');
+        if (!await file.exists()) {
+          allAyahsExist = false;
+          break;
+        }
+      }
+
+      if (allAyahsExist) {
+        debugPrint(
+          'Surah $surahNumber detected as fully downloaded via stream.',
+        );
+        downloadedSurahs.add(surahNumber);
+        await _saveDownloadedList();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error checking completeness for Surah $surahNumber: $e');
+    }
   }
 
   Future<void> _saveDownloadedList() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('murotal_downloaded_surahs', downloadedSurahs.map((e) => e.toString()).toList());
+    await prefs.setStringList(
+      'murotal_downloaded_surahs',
+      downloadedSurahs.map((e) => e.toString()).toList(),
+    );
     debugPrint('Saved Downloaded Surahs: ${downloadedSurahs.length} items');
   }
 
   Future<void> _saveQueue() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('murotal_download_queue', queue.map((e) => e.toString()).toList());
+    await prefs.setStringList(
+      'murotal_download_queue',
+      queue.map((e) => e.toString()).toList(),
+    );
     debugPrint('Saved Queue: ${queue.length} items');
   }
 
   void addToQueue(int surahNumber) {
-    if (!queue.contains(surahNumber) && !downloadedSurahs.contains(surahNumber)) {
+    if (!queue.contains(surahNumber) &&
+        !downloadedSurahs.contains(surahNumber)) {
       queue.add(surahNumber);
       _saveQueue();
       notifyListeners();
@@ -107,30 +254,39 @@ class MurotalDownloadService extends ChangeNotifier {
     // Process queue
     while (queue.isNotEmpty && status == MurotalDownloadStatus.downloading) {
       currentSurah = queue.first;
-      
+
       // Find surah info
       final surahInfo = surahs.firstWhere(
         (s) => s.number == currentSurah,
-        orElse: () => Surah(number: currentSurah, name: 'Surah $currentSurah', nameAr: '', type: '', totalAyahs: 7),
+        orElse: () => Surah(
+          number: currentSurah,
+          name: 'Surah $currentSurah',
+          nameAr: '',
+          type: '',
+          totalAyahs: 7,
+        ),
       );
       totalAyahs = surahInfo.totalAyahs;
-      
+
       // Resume Logic
       int startFrom = 1;
       final prefs = await SharedPreferences.getInstance();
       int? savedSurah = prefs.getInt('murotal_current_download_surah');
       int? savedAyah = prefs.getInt('murotal_last_downloaded_ayah');
 
-      if (savedSurah == currentSurah && savedAyah != null && savedAyah < totalAyahs) {
-         startFrom = savedAyah + 1;
+      if (savedSurah == currentSurah &&
+          savedAyah != null &&
+          savedAyah < totalAyahs) {
+        startFrom = savedAyah + 1;
       } else {
-         // New surah starting
-         await prefs.setInt('murotal_current_download_surah', currentSurah);
-         await prefs.setInt('murotal_last_downloaded_ayah', 0);
+        // New surah starting
+        await prefs.setInt('murotal_current_download_surah', currentSurah);
+        await prefs.setInt('murotal_last_downloaded_ayah', 0);
       }
 
       for (int i = startFrom; i <= totalAyahs; i++) {
-        if (status != MurotalDownloadStatus.downloading) break; // Check for pause/stop
+        if (status != MurotalDownloadStatus.downloading)
+          break; // Check for pause/stop
 
         currentAyah = i;
         progress = (i / totalAyahs);
@@ -150,7 +306,7 @@ class MurotalDownloadService extends ChangeNotifier {
         // Surah completed
         queue.removeAt(0);
         _saveQueue();
-        
+
         // Reset progress trackers
         await prefs.remove('murotal_current_download_surah');
         await prefs.remove('murotal_last_downloaded_ayah');
@@ -175,7 +331,8 @@ class MurotalDownloadService extends ChangeNotifier {
   Future<void> _downloadAyahAudio(int surahNum, int ayahNum) async {
     if (_localPath == null) await init();
 
-    final String fileName = '${surahNum.toString().padLeft(3, '0')}-${ayahNum.toString().padLeft(3, '0')}.mp3';
+    final String fileName =
+        '${surahNum.toString().padLeft(3, '0')}-${ayahNum.toString().padLeft(3, '0')}.mp3';
     final String localFilePath = '$_localPath/$fileName';
     final File file = File(localFilePath);
 
@@ -212,7 +369,7 @@ class MurotalDownloadService extends ChangeNotifier {
     currentAyah = 0;
     totalAyahs = 0;
     queue.clear();
-    
+
     // Clear persistence
     _saveQueue();
     final prefs = await SharedPreferences.getInstance();
@@ -240,24 +397,31 @@ class MurotalDownloadService extends ChangeNotifier {
     }
   }
 
-  Future<void> _showProgressNotification(int surah, int current, int total) async {
-    final AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'murotal_download_channel', 
-      'Murotal Downloads',
-      channelDescription: 'Show murotal download progress',
-      importance: Importance.low,
-      priority: Priority.low,
-      showProgress: true,
-      maxProgress: total,
-      progress: current,
-      onlyAlertOnce: true,
+  Future<void> _showProgressNotification(
+    int surah,
+    int current,
+    int total,
+  ) async {
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'murotal_download_channel',
+          'Murotal Downloads',
+          channelDescription: 'Show murotal download progress',
+          importance: Importance.low,
+          priority: Priority.low,
+          showProgress: true,
+          maxProgress: total,
+          progress: current,
+          onlyAlertOnce: true,
+        );
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
     );
-    final NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
     await flutterLocalNotificationsPlugin.show(
-      id: 1, 
-      title: 'Downloading Surah $surah', 
-      body: 'Ayah $current of $total', 
-      notificationDetails: platformChannelSpecifics
+      id: 1,
+      title: 'Downloading Surah $surah',
+      body: 'Ayah $current of $total',
+      notificationDetails: platformChannelSpecifics,
     );
   }
 }
